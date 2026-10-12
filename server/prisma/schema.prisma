@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PLACED
+  CONFIRMED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  enrollmentNo String     @unique
+  phone        String
+  bhawan       String
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  cartItems    CartItem[]
+  orders       Order[]
+}
+
+model Item {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  category    String
+  price       Decimal     @db.Decimal(10, 2)
+  imageUrl    String
+  stock       Int
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+
+  @@index([category])
+}
+
+model CartItem {
+  id       String @id @default(cuid())
+  userId   String
+  itemId   String
+  quantity Int
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item     Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  status      OrderStatus @default(PLACED)
+  subtotal    Decimal     @db.Decimal(10, 2)
+  deliveryFee Decimal     @db.Decimal(10, 2)
+  total       Decimal     @db.Decimal(10, 2)
+  bhawan      String
+  roomNo      String
+  note        String?
+  createdAt   DateTime    @default(now())
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+
+  @@index([userId, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  itemId    String
+  itemName  String
+  unitPrice Decimal @db.Decimal(10, 2)
+  quantity  Int
+  lineTotal Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  item      Item    @relation(fields: [itemId], references: [id])
+}
