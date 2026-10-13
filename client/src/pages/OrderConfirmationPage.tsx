@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useOrder } from '../hooks/useOrder';
 import { EmptyState } from '../components/EmptyState';
 import { OrderBreakdown } from '../components/OrderBreakdown';
+import { PaymentNote } from '../components/PaymentNote';
 import { FullPageSpinner } from '../components/Spinner';
 import { CheckCircleIcon, MapPinIcon, PackageIcon } from '../components/icons';
 import { formatDateTime, formatPrice, shortOrderId } from '../lib/format';
@@ -34,6 +35,7 @@ export function OrderConfirmationPage() {
               </p>
               <p className="text-slate-500">Placed {formatDateTime(order.createdAt)}</p>
               {order.note && <p className="mt-1 text-slate-600">Note: {order.note}</p>}
+              <PaymentNote className="mt-2" />
             </div>
           </div>
           <OrderBreakdown order={order} />

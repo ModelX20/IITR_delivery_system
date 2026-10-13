@@ -16,6 +16,8 @@ interface CartContextValue {
   setQuantity: (itemId: string, quantity: number) => Promise<void>;
   remove: (itemId: string) => Promise<void>;
   refresh: () => Promise<void>;
+  /** Replace the cart with one returned by another API call (e.g. reorder). */
+  replace: (cart: CartSummary) => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -36,14 +38,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Only students have a cart; other roles never call the cart API.
+  const isStudent = user?.role === 'STUDENT';
   useEffect(() => {
-    if (user) {
+    if (isStudent) {
       setLoading(true);
       refresh();
     } else {
       setCart(EMPTY_CART);
     }
-  }, [user, refresh]);
+  }, [isStudent, user?.id, refresh]);
 
   /** Runs a cart request, marks the item as busy meanwhile, and stores the server's updated cart. */
   const mutate = useCallback(async (itemId: string, request: () => Promise<CartSummary>) => {
@@ -87,7 +91,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ cart, loading, pending, quantityOf, add, setQuantity, remove, refresh }),
+    () => ({ cart, loading, pending, quantityOf, add, setQuantity, remove, refresh, replace: setCart }),
     [cart, loading, pending, quantityOf, add, setQuantity, remove, refresh],
   );
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

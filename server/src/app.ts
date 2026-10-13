@@ -3,12 +3,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
-import { requireAuth } from './middleware/auth';
+import { requireAuth, requireRole } from './middleware/auth';
 import { errorHandler, notFound } from './middleware/error';
 import { authRouter } from './routes/auth';
 import { itemsRouter } from './routes/items';
 import { cartRouter } from './routes/cart';
 import { ordersRouter } from './routes/orders';
+import { adminRouter } from './routes/admin';
 
 export function createApp() {
   const app = express();
@@ -23,9 +24,14 @@ export function createApp() {
   });
 
   app.use('/api/auth', authRouter);
-  app.use('/api/items', requireAuth, itemsRouter);
-  app.use('/api/cart', requireAuth, cartRouter);
-  app.use('/api/orders', requireAuth, ordersRouter);
+
+  // Shopping is for students only.
+  const student = [requireAuth, requireRole('STUDENT')];
+  app.use('/api/items', student, itemsRouter);
+  app.use('/api/cart', student, cartRouter);
+  app.use('/api/orders', student, ordersRouter);
+
+  app.use('/api/admin', adminRouter);
 
   app.use(notFound);
   app.use(errorHandler);

@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma';
 import { AppError } from '../lib/errors';
 import { AUTH_COOKIE, authCookieOptions, clearCookieOptions, signToken } from '../lib/auth';
 import { toUser } from '../lib/serialize';
-import { currentUserId, requireAuth } from '../middleware/auth';
+import { BLOCKED_MESSAGE, currentUserId, requireAuth } from '../middleware/auth';
 import { authRateLimit } from '../middleware/rateLimit';
 
 const BCRYPT_ROUNDS = 10;
@@ -38,6 +38,8 @@ authRouter.post('/login', authRateLimit, async (req, res) => {
   if (!(await bcrypt.compare(password, user.passwordHash))) {
     throw new AppError(401, 'Incorrect password');
   }
+  // Checked after the password so the blocked status is only revealed to the account owner.
+  if (user.isBlocked) throw new AppError(403, BLOCKED_MESSAGE);
 
   res.cookie(AUTH_COOKIE, signToken(user.id), authCookieOptions);
   res.json({ user: toUser(user) });
@@ -49,10 +51,7 @@ authRouter.post('/logout', requireAuth, (_req, res) => {
 });
 
 authRouter.get('/me', requireAuth, async (req, res) => {
-  const user = await prisma.user.findUnique({ where: { id: currentUserId(req) } });
-  if (!user) {
-    res.clearCookie(AUTH_COOKIE, clearCookieOptions);
-    throw new AppError(401, 'Please log in to continue');
-  }
+  // requireAuth has already checked that the user exists and is not blocked.
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: currentUserId(req) } });
   res.json({ user: toUser(user) });
 });

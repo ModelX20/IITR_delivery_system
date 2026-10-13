@@ -5,15 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { ItemCard } from '../components/ItemCard';
 import { EmptyState } from '../components/EmptyState';
 import { SearchIcon } from '../components/icons';
-
-function useDebounced<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
+import { useDebounced } from '../hooks/useDebounced';
 
 function SkeletonCard() {
   return (

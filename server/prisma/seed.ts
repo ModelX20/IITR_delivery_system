@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, type OrderStatus, type Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -41,8 +41,8 @@ const items: SeedItem[] = [
   { id: 'item-a4-register', name: 'A4 Register', description: '200-page ruled register', category: 'Stationery', price: '60.00', stock: 70 },
   { id: 'item-classmate-notebook', name: 'Classmate Notebook', description: '172-page single-line notebook', category: 'Stationery', price: '45.00', stock: 90 },
   { id: 'item-reynolds-pens', name: 'Reynolds Pens (Pack of 5)', description: 'Blue ballpoint pens', category: 'Stationery', price: '50.00', stock: 60 },
-  { id: 'item-engg-drawing-kit', name: 'Engineering Drawing Kit', description: 'Mini drafter, compass, set squares and scale', category: 'Stationery', price: '350.00', stock: 15 },
-  { id: 'item-casio-fx991', name: 'Casio fx-991ES Plus', description: 'Scientific calculator', category: 'Stationery', price: '1095.00', stock: 8 },
+  { id: 'item-engg-drawing-kit', name: 'Engineering Drawing Kit', description: 'Mini drafter, compass, set squares and scale', category: 'Stationery', price: '350.00', stock: 3 },
+  { id: 'item-casio-fx991', name: 'Casio fx-991ES Plus', description: 'Scientific calculator', category: 'Stationery', price: '1095.00', stock: 4 },
 
   // Essentials
   { id: 'item-colgate', name: 'Colgate Toothpaste', description: 'Strong teeth toothpaste, 100 g', category: 'Essentials', price: '55.00', stock: 50 },
@@ -64,32 +64,115 @@ function placeholderImage(name: string, category: string) {
   return `https://placehold.co/400x300/${color}/ffffff/png?text=${encodeURIComponent(name)}`;
 }
 
-async function main() {
-  const password = process.env.SEED_TEST_PASSWORD;
-  if (!password) {
-    throw new Error('SEED_TEST_PASSWORD is not set. Copy server/.env.example to server/.env first.');
-  }
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is not set. Copy server/.env.example to server/.env first.`);
+  return value;
+}
 
+type SeedUser = { name: string; email: string; enrollmentNo: string; phone: string; bhawan: string; role: Role; passwordEnv: string };
+
+const users: SeedUser[] = [
+  { name: 'Test Student', email: 'test@iitr.ac.in', enrollmentNo: '21110001', phone: '9876543210', bhawan: 'Rajendra', role: 'STUDENT', passwordEnv: 'SEED_TEST_PASSWORD' },
+  { name: 'Riya Sharma', email: 'riya@iitr.ac.in', enrollmentNo: '22115042', phone: '9123456780', bhawan: 'Sarojini', role: 'STUDENT', passwordEnv: 'SEED_TEST_PASSWORD' },
+  { name: 'Store Admin', email: 'admin@iitr.ac.in', enrollmentNo: '10000001', phone: '9000000001', bhawan: 'Cautley', role: 'ADMIN', passwordEnv: 'SEED_ADMIN_PASSWORD' },
+  { name: 'Arjun Mehta', email: 'delivery@iitr.ac.in', enrollmentNo: '21112077', phone: '9000000002', bhawan: 'Govind', role: 'DELIVERY_PARTNER', passwordEnv: 'SEED_DELIVERY_PASSWORD' },
+];
+
+type SeedOrder = {
+  id: string;
+  user: string;
+  status: OrderStatus;
+  /** Who made each change after PLACED; "admin" or "student". */
+  cancelledBy?: 'admin' | 'student';
+  hoursAgo: number;
+  bhawan: string;
+  roomNo: string;
+  note?: string;
+  lines: [itemId: string, quantity: number][];
+};
+
+// Sample orders so the admin panel and order history aren't empty. Created once, never modified.
+const orders: SeedOrder[] = [
+  { id: 'cmdemoseed0001', user: 'test@iitr.ac.in', status: 'DELIVERED', hoursAgo: 72, bhawan: 'Rajendra', roomNo: 'A-112', lines: [['item-maggi', 4], ['item-amul-kool', 2]] },
+  { id: 'cmdemoseed0002', user: 'riya@iitr.ac.in', status: 'CANCELLED', cancelledBy: 'student', hoursAgo: 48, bhawan: 'Sarojini', roomNo: '204', lines: [['item-veg-thali', 1]] },
+  { id: 'cmdemoseed0003', user: 'test@iitr.ac.in', status: 'OUT_FOR_DELIVERY', hoursAgo: 2, bhawan: 'Rajendra', roomNo: 'A-112', note: 'Call when outside', lines: [['item-a4-register', 2], ['item-reynolds-pens', 1]] },
+  { id: 'cmdemoseed0004', user: 'riya@iitr.ac.in', status: 'CONFIRMED', hoursAgo: 1, bhawan: 'Sarojini', roomNo: '204', lines: [['item-cold-coffee', 2], ['item-veg-sandwich', 2]] },
+  { id: 'cmdemoseed0005', user: 'riya@iitr.ac.in', status: 'PLACED', hoursAgo: 0.2, bhawan: 'Sarojini', roomNo: '204', lines: [['item-casio-fx991', 1]] },
+  { id: 'cmdemoseed0006', user: 'test@iitr.ac.in', status: 'DELIVERED', hoursAgo: 144, bhawan: 'Rajendra', roomNo: 'A-112', lines: [['item-engg-drawing-kit', 1]] },
+  { id: 'cmdemoseed0007', user: 'test@iitr.ac.in', status: 'CANCELLED', cancelledBy: 'admin', hoursAgo: 30, bhawan: 'Rajendra', roomNo: 'A-112', lines: [['item-red-bull', 2]] },
+];
+
+const FORWARD: OrderStatus[] = ['PLACED', 'CONFIRMED', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+
+function statusPath(order: SeedOrder): OrderStatus[] {
+  if (order.status === 'CANCELLED') return order.cancelledBy === 'admin' ? ['PLACED', 'CONFIRMED', 'CANCELLED'] : ['PLACED', 'CANCELLED'];
+  return FORWARD.slice(0, FORWARD.indexOf(order.status) + 1);
+}
+
+async function seedOrders(userIds: Map<string, string>, adminId: string) {
+  let created = 0;
+  for (const order of orders) {
+    if (await prisma.order.findUnique({ where: { id: order.id } })) continue;
+
+    const lines = order.lines.map(([itemId, quantity]) => {
+      const item = items.find((i) => i.id === itemId)!;
+      const unitPrice = new Prisma.Decimal(item.price);
+      return { itemId, itemName: item.name, unitPrice, quantity, lineTotal: unitPrice.times(quantity) };
+    });
+    const subtotal = lines.reduce((sum, l) => sum.plus(l.lineTotal), new Prisma.Decimal(0));
+    const deliveryFee = subtotal.greaterThan(300) ? new Prisma.Decimal(0) : new Prisma.Decimal(20);
+    const placedAt = new Date(Date.now() - order.hoursAgo * 3600_000);
+    const userId = userIds.get(order.user)!;
+
+    await prisma.order.create({
+      data: {
+        id: order.id,
+        userId,
+        status: order.status,
+        subtotal,
+        deliveryFee,
+        total: subtotal.plus(deliveryFee),
+        bhawan: order.bhawan,
+        roomNo: order.roomNo,
+        note: order.note,
+        createdAt: placedAt,
+        items: { create: lines },
+        statusHistory: {
+          create: statusPath(order).map((status, i) => ({
+            status,
+            changedById: status === 'PLACED' || (status === 'CANCELLED' && order.cancelledBy === 'student') ? userId : adminId,
+            changedAt: new Date(placedAt.getTime() + i * 15 * 60_000),
+          })),
+        },
+      },
+    });
+    created++;
+  }
+  console.log(`Seeded ${created} sample orders (${orders.length - created} already existed)`);
+}
+
+async function main() {
   for (const item of items) {
     const data = { ...item, imageUrl: placeholderImage(item.name, item.category), isActive: true };
     await prisma.item.upsert({ where: { id: item.id }, create: data, update: data });
   }
   console.log(`Seeded ${items.length} items`);
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.upsert({
-    where: { email: 'test@iitr.ac.in' },
-    create: {
-      name: 'Test Student',
-      email: 'test@iitr.ac.in',
-      enrollmentNo: '21110001',
-      phone: '9876543210',
-      bhawan: 'Rajendra',
-      passwordHash,
-    },
-    update: { passwordHash },
-  });
-  console.log('Seeded test user test@iitr.ac.in (password = SEED_TEST_PASSWORD from .env)');
+  const userIds = new Map<string, string>();
+  for (const { passwordEnv, ...user } of users) {
+    const passwordHash = await bcrypt.hash(requireEnv(passwordEnv), 10);
+    const saved = await prisma.user.upsert({
+      where: { email: user.email },
+      create: { ...user, passwordHash },
+      update: { passwordHash, role: user.role, isBlocked: false },
+    });
+    userIds.set(user.email, saved.id);
+    console.log(`Seeded ${user.role.toLowerCase()} ${user.email} (password = ${passwordEnv} from .env)`);
+  }
+
+  await prisma.storeSettings.upsert({ where: { id: 1 }, create: { id: 1 }, update: {} });
+  await seedOrders(userIds, userIds.get('admin@iitr.ac.in')!);
 }
 
 main()

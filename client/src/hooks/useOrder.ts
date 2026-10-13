@@ -20,5 +20,5 @@ export function useOrder(id: string | undefined) {
     };
   }, [id]);
 
-  return { order, loading, error };
+  return { order, loading, error, setOrder };
 }

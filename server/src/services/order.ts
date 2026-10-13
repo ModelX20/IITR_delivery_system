@@ -2,10 +2,11 @@ import type { PlaceOrderInput } from '@iitr/shared';
 import { prisma } from '../lib/prisma';
 import { AppError } from '../lib/errors';
 import { deliveryFeeFor, lineTotal, sum } from '../lib/money';
+import { orderDetailInclude } from '../lib/orderInclude';
 
 /**
  * Places an order from the user's cart in a single transaction:
- * check + decrement stock, create the order with price snapshots, clear the cart.
+ * check + decrement stock, create the order with price snapshots and its first status-history entry, clear the cart.
  * Any thrown error rolls the whole transaction back.
  */
 export async function placeOrder(userId: string, input: PlaceOrderInput) {
@@ -59,8 +60,9 @@ export async function placeOrder(userId: string, input: PlaceOrderInput) {
         roomNo: input.roomNo,
         note: input.note || null,
         items: { create: lines },
+        statusHistory: { create: { status: 'PLACED', changedById: userId } },
       },
-      include: { items: true },
+      include: orderDetailInclude,
     });
 
     await tx.cartItem.deleteMany({ where: { userId } });

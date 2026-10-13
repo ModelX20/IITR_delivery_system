@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { EmptyState } from '../components/EmptyState';
 import { Field, fieldProps } from '../components/Field';
+import { PaymentNote } from '../components/PaymentNote';
 import { QuantityStepper } from '../components/QuantityStepper';
 import { FullPageSpinner, Spinner } from '../components/Spinner';
 import { CartIcon, TrashIcon } from '../components/icons';
@@ -175,7 +176,8 @@ export function CartPage() {
                 <dd className="font-bold text-slate-900">{formatPrice(cart.total)}</dd>
               </div>
             </dl>
-            <button type="submit" className="btn-primary mt-5 w-full py-3" disabled={placing || anyOverStock || pending.size > 0}>
+            <PaymentNote className="mt-4" />
+            <button type="submit" className="btn-primary mt-4 w-full py-3" disabled={placing || anyOverStock || pending.size > 0}>
               {placing && <Spinner className="size-4" />}
               {placing ? 'Placing order…' : `Place Order · ${formatPrice(cart.total)}`}
             </button>

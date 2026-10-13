@@ -1,11 +1,12 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { loginSchema, type LoginInput } from '@iitr/shared';
+import { ROLE_HOME, loginSchema, type LoginInput } from '@iitr/shared';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Field, fieldProps } from '../components/Field';
 import { PasswordInput } from '../components/PasswordInput';
+import { pathBelongsToRole } from '../components/RouteGuards';
 import { Spinner } from '../components/Spinner';
 import { validate, type FieldErrors } from '../lib/forms';
 import { AuthLayout } from './AuthLayout';
@@ -13,7 +14,7 @@ import { AuthLayout } from './AuthLayout';
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const from = (useLocation().state as { from?: string } | null)?.from ?? '/';
+  const from = (useLocation().state as { from?: string } | null)?.from;
 
   const [values, setValues] = useState<LoginInput>({ email: '', password: '' });
   const [errors, setErrors] = useState<FieldErrors<LoginInput>>({});
@@ -35,7 +36,8 @@ export function LoginPage() {
     try {
       const user = await login(data);
       toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
-      navigate(from, { replace: true });
+      // Each role lands on its own dashboard, unless they were heading to a page in their own area.
+      navigate(from && pathBelongsToRole(from, user.role) ? from : ROLE_HOME[user.role], { replace: true });
     } catch (err) {
       setFormError(errorMessage(err));
     } finally {
