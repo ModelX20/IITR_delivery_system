@@ -5,6 +5,7 @@ import { CATEGORIES, type AdminItem } from '@iitr/shared';
 import { api, errorMessage } from '../../api/client';
 import { EmptyState } from '../../components/EmptyState';
 import { ConfirmDialog } from '../../components/Modal';
+import { ItemImage } from '../../components/ItemImage';
 import { FullPageSpinner } from '../../components/Spinner';
 import { PencilIcon, PlusIcon, SearchIcon, TagIcon } from '../../components/icons';
 import { useApi } from '../../hooks/useApi';
@@ -129,7 +130,9 @@ export function AdminItemsPage() {
         <ul className={`card divide-y divide-slate-100 ${loading ? 'opacity-60' : ''}`}>
           {data.items.map((item) => (
             <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 sm:flex-nowrap">
-              <img src={item.imageUrl} alt="" className={`size-12 shrink-0 rounded-lg bg-slate-100 object-cover ${item.isActive ? '' : 'opacity-40 grayscale'}`} />
+              <div className="size-12 shrink-0 overflow-hidden rounded-lg">
+                <ItemImage name={item.name} category={item.category} imageUrl={item.imageUrl} size="sm" dimmed={!item.isActive} />
+              </div>
               <div className="min-w-0 flex-1">
                 <p className={`truncate font-medium ${item.isActive ? 'text-slate-900' : 'text-slate-400 line-through'}`}>{item.name}</p>
                 <p className="text-xs text-slate-500">{item.category}</p>

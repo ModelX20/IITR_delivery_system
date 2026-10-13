@@ -15,8 +15,14 @@ export function RequireRole({ roles }: { roles: Role[] }) {
   if (loading) return <FullPageSpinner />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (!roles.includes(user.role)) return <Navigate to={ROLE_HOME[user.role]} replace />;
+  // Google sign-ups must add enrollment number, bhawan and phone before using the shop.
+  if (user.role === 'STUDENT' && !user.profileComplete && location.pathname !== COMPLETE_PROFILE_PATH) {
+    return <Navigate to={COMPLETE_PROFILE_PATH} replace />;
+  }
   return <Outlet />;
 }
+
+export const COMPLETE_PROFILE_PATH = '/complete-profile';
 
 /** Login/register: logged-in users are sent to their own home instead. */
 export function PublicOnlyRoute() {

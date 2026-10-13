@@ -2,14 +2,19 @@ import request from 'supertest';
 import type { Role } from '@prisma/client';
 import { createApp } from '../src/app';
 import { prisma } from '../src/lib/prisma';
+import { flushBackground } from '../src/lib/background';
+import { outbox } from '../src/email/mailer';
 
 export const app = createApp();
 
 export type Agent = ReturnType<typeof request.agent>;
 
 export async function resetDb() {
+  // Let emails etc. from the previous test finish before wiping the tables they read.
+  await flushBackground();
+  outbox.length = 0;
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "OrderStatusHistory", "OrderItem", "Order", "CartItem", "Item", "User" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "PasswordResetToken", "OrderStatusHistory", "OrderItem", "Order", "CartItem", "Item", "User" RESTART IDENTITY CASCADE',
   );
   await prisma.storeSettings.upsert({ where: { id: 1 }, create: { id: 1 }, update: { lowStockThreshold: 5 } });
 }
@@ -77,4 +82,10 @@ export async function placeOrder(agent: Agent, lines: { itemId: string; quantity
 
 export async function stockOf(itemId: string) {
   return (await prisma.item.findUniqueOrThrow({ where: { id: itemId } })).stock;
+}
+
+/** Emails sent so far, after waiting for background sends to finish. */
+export async function sentEmails() {
+  await flushBackground();
+  return [...outbox];
 }

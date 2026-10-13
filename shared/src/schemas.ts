@@ -1,19 +1,21 @@
 import { z } from 'zod';
-import { BHAWANS, CATEGORIES, IITR_EMAIL_DOMAIN, ORDER_STATUSES, ROLES } from './config';
+import { BHAWANS, CATEGORIES, IITR_EMAIL_DOMAIN, ORDER_STATUSES, PARTNER_STATUSES, ROLES, SIGNUP_ROLES, isAllowedGoogleEmail } from './config';
 
-const email = z
-  .string()
-  .trim()
-  .toLowerCase()
-  .min(1, 'Email is required')
-  .pipe(z.email('Enter a valid email address'))
-  .refine((value) => value.endsWith(IITR_EMAIL_DOMAIN), {
-    message: `Please use your IITR email (ending in ${IITR_EMAIL_DOMAIN})`,
-  });
+const anyEmail = z.string().trim().toLowerCase().min(1, 'Email is required').pipe(z.email('Enter a valid email address'));
 
-export const registerSchema = z.object({
-  name: z.string().trim().min(2, 'Full name must be at least 2 characters').max(100),
-  email,
+/** New password-based accounts must use an IITR email. */
+const iitrEmail = anyEmail.refine((value) => value.endsWith(IITR_EMAIL_DOMAIN), {
+  message: `Please use your IITR email (ending in ${IITR_EMAIL_DOMAIN})`,
+});
+
+/** Existing accounts may also be Gmail (created via Google sign-in). */
+const accountEmail = anyEmail.refine(isAllowedGoogleEmail, {
+  message: `Use your IITR email (or the Gmail account you signed in with Google)`,
+});
+
+const password = z.string().min(8, 'Password must be at least 8 characters').max(72, 'Password must be at most 72 characters');
+
+const profileFields = {
   enrollmentNo: z
     .string()
     .trim()
@@ -23,12 +25,28 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .regex(/^[6-9][0-9]{9}$/, 'Enter a valid 10-digit mobile number'),
-  password: z.string().min(8, 'Password must be at least 8 characters').max(72),
+};
+
+export const registerSchema = z.object({
+  name: z.string().trim().min(2, 'Full name must be at least 2 characters').max(100),
+  email: iitrEmail,
+  ...profileFields,
+  password,
+  role: z.enum(SIGNUP_ROLES, { message: 'Choose whether you want to order or deliver' }).default('STUDENT'),
 });
 
 export const loginSchema = z.object({
-  email,
+  email: accountEmail,
   password: z.string().min(1, 'Password is required'),
+});
+
+export const completeProfileSchema = z.object(profileFields);
+
+export const forgotPasswordSchema = z.object({ email: anyEmail });
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(20, 'This reset link is invalid').max(200, 'This reset link is invalid'),
+  password,
 });
 
 export const addToCartSchema = z.object({
@@ -59,11 +77,15 @@ const itemFields = {
   description: z.string().trim().max(500, 'Description must be under 500 characters'),
   category: z.enum(CATEGORIES, { message: 'Please select a category' }),
   price,
-  imageUrl: z.url({ protocol: /^https?$/, message: 'Enter a valid http(s) image URL' }),
+  // Empty = show the built-in illustrated tile instead of a photo.
+  imageUrl: z
+    .string()
+    .trim()
+    .refine((v) => v === '' || z.url({ protocol: /^https?$/ }).safeParse(v).success, 'Enter a valid http(s) image URL, or leave it empty'),
   stock: z.number({ message: 'Stock must be a number' }).int('Stock must be a whole number').min(0, 'Stock cannot be negative').max(100000),
 };
 
-export const createItemSchema = z.object({ ...itemFields, isActive: z.boolean().default(true) });
+export const createItemSchema = z.object({ ...itemFields, imageUrl: itemFields.imageUrl.default(''), isActive: z.boolean().default(true) });
 
 // No defaults here: a PATCH must only change the fields it sends.
 export const updateItemSchema = z
@@ -95,6 +117,7 @@ export const adminUsersQuerySchema = z.object({
   search: optionalText,
   role: z.enum(ROLES).optional(),
   blocked: z.enum(['true', 'false']).optional(),
+  partnerStatus: z.enum(PARTNER_STATUSES).optional(),
   page,
 });
 
@@ -104,13 +127,20 @@ export const updateOrderStatusSchema = z.object({
 
 export const updateUserRoleSchema = z.object({ role: z.enum(ROLES, { message: 'Invalid role' }) });
 export const updateUserBlockSchema = z.object({ isBlocked: z.boolean() });
+export const updatePartnerStatusSchema = z.object({
+  status: z.enum(['APPROVED', 'REJECTED'], { message: 'Status must be APPROVED or REJECTED' }),
+});
 
 export const updateSettingsSchema = z.object({
   lowStockThreshold: z.number().int('Must be a whole number').min(0).max(10000),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type RegisterFormInput = z.input<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type AddToCartInput = z.infer<typeof addToCartSchema>;
 export type UpdateCartInput = z.infer<typeof updateCartSchema>;
 export type PlaceOrderInput = z.infer<typeof placeOrderSchema>;

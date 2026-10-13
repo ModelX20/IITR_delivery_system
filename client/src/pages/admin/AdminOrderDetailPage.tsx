@@ -97,15 +97,17 @@ export function AdminOrderDetailPage() {
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg bg-slate-50 p-4 text-sm">
             <p className="font-medium text-slate-900">{order.customer.name}</p>
-            <p className="text-slate-500">Enrollment {order.customer.enrollmentNo}</p>
+            {order.customer.enrollmentNo && <p className="text-slate-500">Enrollment {order.customer.enrollmentNo}</p>}
             <a href={`mailto:${order.customer.email}`} className="mt-2 flex items-center gap-2 break-all text-brand-700 hover:underline">
               <MailIcon className="size-4 shrink-0" />
               {order.customer.email}
             </a>
-            <a href={`tel:${order.customer.phone}`} className="mt-1 flex items-center gap-2 text-brand-700 hover:underline">
-              <PhoneIcon className="size-4 shrink-0" />
-              {order.customer.phone}
-            </a>
+            {order.customer.phone && (
+              <a href={`tel:${order.customer.phone}`} className="mt-1 flex items-center gap-2 text-brand-700 hover:underline">
+                <PhoneIcon className="size-4 shrink-0" />
+                {order.customer.phone}
+              </a>
+            )}
           </div>
           <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4 text-sm">
             <MapPinIcon className="mt-0.5 size-5 shrink-0 text-brand-600" />
@@ -115,6 +117,17 @@ export function AdminOrderDetailPage() {
               </p>
               {order.note && <p className="mt-1 text-slate-600">Note: {order.note}</p>}
               <PaymentNote className="mt-2" />
+              <p className="mt-2 text-slate-600">
+                Delivery partner:{' '}
+                {order.deliveryPartner ? (
+                  <span className="font-medium text-slate-900">
+                    {order.deliveryPartner.name}
+                    {order.deliveryPartner.phone && ` · ${order.deliveryPartner.phone}`}
+                  </span>
+                ) : (
+                  <span className="text-slate-500">not assigned yet</span>
+                )}
+              </p>
             </div>
           </div>
           <div className="rounded-lg border border-slate-100 p-4">

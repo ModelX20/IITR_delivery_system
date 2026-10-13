@@ -76,6 +76,19 @@ export function OrderDetailPage() {
               </p>
               {order.note && <p className="mt-1 text-slate-600">Note: {order.note}</p>}
               <PaymentNote className="mt-3" />
+              {order.deliveryPartner && (
+                <p className="mt-3 text-slate-600">
+                  Delivering: <span className="font-medium text-slate-900">{order.deliveryPartner.name}</span>
+                  {order.deliveryPartner.phone && (
+                    <>
+                      {' · '}
+                      <a href={`tel:${order.deliveryPartner.phone}`} className="text-brand-700 hover:underline">
+                        {order.deliveryPartner.phone}
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           </div>
           <div className="rounded-lg border border-slate-100 p-4">

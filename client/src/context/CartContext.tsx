@@ -38,16 +38,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Only students have a cart; other roles never call the cart API.
-  const isStudent = user?.role === 'STUDENT';
+  // Only students with a complete profile have a cart; nobody else calls the cart API.
+  const hasCart = user?.role === 'STUDENT' && user.profileComplete;
   useEffect(() => {
-    if (isStudent) {
+    if (hasCart) {
       setLoading(true);
       refresh();
     } else {
       setCart(EMPTY_CART);
     }
-  }, [isStudent, user?.id, refresh]);
+  }, [hasCart, user?.id, refresh]);
 
   /** Runs a cart request, marks the item as busy meanwhile, and stores the server's updated cart. */
   const mutate = useCallback(async (itemId: string, request: () => Promise<CartSummary>) => {

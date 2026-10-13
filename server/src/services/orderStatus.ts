@@ -18,6 +18,8 @@ interface ChangeStatusInput {
   actorId: string;
   /** When set, the order must belong to this user (otherwise it is treated as not found). */
   ownerId?: string;
+  /** When set, the order must be assigned to this delivery partner (otherwise it is treated as not found). */
+  partnerId?: string;
   /** Extra rule for students: which statuses they may cancel from. */
   allowedFrom?: readonly OrderStatus[];
 }
@@ -27,10 +29,11 @@ interface ChangeStatusInput {
  * validate the transition, update the status (only if nobody changed it meanwhile),
  * restore stock when cancelling, and record the change in the status history.
  */
-export async function changeOrderStatus({ orderId, to, actorId, ownerId, allowedFrom }: ChangeStatusInput) {
+export async function changeOrderStatus({ orderId, to, actorId, ownerId, partnerId, allowedFrom }: ChangeStatusInput) {
   return prisma.$transaction(async (tx) => {
     const where: Prisma.OrderWhereInput = { id: orderId };
     if (ownerId) where.userId = ownerId;
+    if (partnerId) where.deliveryPartnerId = partnerId;
 
     const order = await tx.order.findFirst({ where, include: { items: true } });
     if (!order) throw new AppError(404, 'Order not found');
@@ -43,7 +46,10 @@ export async function changeOrderStatus({ orderId, to, actorId, ownerId, allowed
     }
 
     // Conditional update: fails if another request changed the status after we read it.
-    const { count } = await tx.order.updateMany({ where: { id: order.id, status: order.status }, data: { status: to } });
+    const { count } = await tx.order.updateMany({
+      where: { id: order.id, status: order.status, ...(partnerId && { deliveryPartnerId: partnerId }) },
+      data: { status: to },
+    });
     if (count === 0) throw new AppError(409, 'This order was just updated. Please refresh and try again.');
 
     if (to === 'CANCELLED') {

@@ -1,18 +1,24 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { BHAWANS, registerSchema, type RegisterInput } from '@iitr/shared';
+import { BHAWANS, ROLE_HOME, registerSchema, type RegisterInput, type SignupRole } from '@iitr/shared';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Field, fieldProps } from '../components/Field';
 import { PasswordInput } from '../components/PasswordInput';
 import { Spinner } from '../components/Spinner';
+import { StoreIcon, TruckIcon } from '../components/icons';
 import { validate, type FieldErrors } from '../lib/forms';
 import { AuthLayout } from './AuthLayout';
 
-type FormValues = Record<keyof RegisterInput, string>;
+type FormValues = Record<Exclude<keyof RegisterInput, 'role'>, string> & { role: SignupRole };
 
-const INITIAL: FormValues = { name: '', email: '', enrollmentNo: '', bhawan: '', phone: '', password: '' };
+const INITIAL: FormValues = { role: 'STUDENT', name: '', email: '', enrollmentNo: '', bhawan: '', phone: '', password: '' };
+
+const ROLE_OPTIONS: { value: SignupRole; title: string; description: string; icon: ReactNode }[] = [
+  { value: 'STUDENT', title: 'I want to order', description: 'Shop and get items delivered to my room', icon: <StoreIcon /> },
+  { value: 'DELIVERY_PARTNER', title: 'I want to deliver', description: 'Deliver orders on campus (needs admin approval)', icon: <TruckIcon /> },
+];
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -37,8 +43,13 @@ export function RegisterPage() {
     setSubmitting(true);
     try {
       const user = await register(data);
-      toast.success(`Welcome to IITR Delivery, ${user.name.split(' ')[0]}!`);
-      navigate('/', { replace: true });
+      toast.success(
+        user.role === 'DELIVERY_PARTNER'
+          ? 'Account created! An admin will review your delivery partner request.'
+          : `Welcome to IITR Delivery, ${user.name.split(' ')[0]}!`,
+        { duration: 5000 },
+      );
+      navigate(ROLE_HOME[user.role], { replace: true });
     } catch (err) {
       setFormError(errorMessage(err));
     } finally {
@@ -54,6 +65,36 @@ export function RegisterPage() {
             {formError}
           </div>
         )}
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-slate-700">I'm signing up to…</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {ROLE_OPTIONS.map((option) => {
+              const selected = values.role === option.value;
+              return (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition ${
+                    selected ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20' : 'border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option.value}
+                    checked={selected}
+                    onChange={() => setValues((v) => ({ ...v, role: option.value }))}
+                    className="sr-only"
+                  />
+                  <span className={`mt-0.5 shrink-0 [&_svg]:size-5 ${selected ? 'text-brand-700' : 'text-slate-400'}`}>{option.icon}</span>
+                  <span>
+                    <span className="block text-sm font-semibold text-slate-900">{option.title}</span>
+                    <span className="block text-xs text-slate-500">{option.description}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
         <Field id="name" label="Full name" error={errors.name}>
           <input {...fieldProps('name', errors.name)} autoComplete="name" className="input" value={values.name} onChange={set('name')} />
         </Field>

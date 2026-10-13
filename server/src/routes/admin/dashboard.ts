@@ -1,17 +1,37 @@
 import { Router } from 'express';
-import { ORDER_STATUSES, updateSettingsSchema, type AdminDashboard, type OrderStatus } from '@iitr/shared';
+import { ORDER_STATUSES, updateSettingsSchema, type AdminDashboard, type OrderStatus, type SalesTotals } from '@iitr/shared';
 import { prisma } from '../../lib/prisma';
 import { money } from '../../lib/money';
 import { toAdminItem, toAdminOrderSummary } from '../../lib/serialize';
-import { istDayStart, istToday } from '../../lib/time';
+import { istDayStart, istMonthStart, istToday } from '../../lib/time';
 import { getSettings, updateSettings } from '../../services/settings';
 import { adminOrderSummaryInclude } from './orders';
 
 export const adminDashboardRouter = Router();
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Orders and revenue since `from`, excluding cancelled orders. */
+async function salesSince(from: Date): Promise<SalesTotals> {
+  const result = await prisma.order.aggregate({
+    where: { createdAt: { gte: from }, status: { not: 'CANCELLED' } },
+    _count: true,
+    _sum: { total: true },
+  });
+  return { orders: result._count, revenue: result._sum.total ? money(result._sum.total) : '0.00' };
+}
+
 adminDashboardRouter.get('/dashboard', async (_req, res) => {
   const { lowStockThreshold } = await getSettings();
-  const todayStart = istDayStart(istToday());
+  const today = istToday();
+  const todayStart = istDayStart(today);
+
+  const [salesToday, last7Days, thisMonth, pendingPartners] = await Promise.all([
+    salesSince(todayStart),
+    salesSince(new Date(todayStart.getTime() - 6 * DAY_MS)), // today plus the 6 days before it
+    salesSince(istMonthStart(today)),
+    prisma.user.count({ where: { role: 'DELIVERY_PARTNER', partnerStatus: 'PENDING' } }),
+  ]);
 
   const [ordersToday, revenueToday, byStatus, totalStudents, activeItems, lowStockItems, recentOrders] = await Promise.all([
     prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
@@ -33,6 +53,8 @@ adminDashboardRouter.get('/dashboard', async (_req, res) => {
     ordersToday,
     revenueToday: revenueToday._sum.total ? money(revenueToday._sum.total) : '0.00',
     ordersByStatus,
+    sales: { today: salesToday, last7Days, thisMonth },
+    pendingPartners,
     totalStudents,
     activeItems,
     lowStockThreshold,

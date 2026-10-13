@@ -1,6 +1,6 @@
 import { Router, type Request } from 'express';
 import type { Prisma } from '@prisma/client';
-import { adminUsersQuerySchema, updateUserBlockSchema, updateUserRoleSchema } from '@iitr/shared';
+import { adminUsersQuerySchema, updatePartnerStatusSchema, updateUserBlockSchema, updateUserRoleSchema } from '@iitr/shared';
 import { prisma } from '../../lib/prisma';
 import { AppError } from '../../lib/errors';
 import { pageArgs, paginated } from '../../lib/pagination';
@@ -12,11 +12,12 @@ export const adminUsersRouter = Router();
 const withOrderCount = { _count: { select: { orders: true } } } satisfies Prisma.UserInclude;
 
 adminUsersRouter.get('/', async (req, res) => {
-  const { search, role, blocked, page } = adminUsersQuerySchema.parse(req.query);
+  const { search, role, blocked, partnerStatus, page } = adminUsersQuerySchema.parse(req.query);
 
   const where: Prisma.UserWhereInput = {};
   if (role) where.role = role;
   if (blocked) where.isBlocked = blocked === 'true';
+  if (partnerStatus) where.partnerStatus = partnerStatus;
   if (search) {
     where.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -46,7 +47,19 @@ async function findOtherUser(req: Request<{ id: string }>) {
 adminUsersRouter.patch('/:id/role', async (req, res) => {
   const { role } = updateUserRoleSchema.parse(req.body);
   const user = await findOtherUser(req);
-  const updated = await prisma.user.update({ where: { id: user.id }, data: { role }, include: withOrderCount });
+  // An admin making someone a partner is an approval; any other role has no partner status.
+  const partnerStatus = role === 'DELIVERY_PARTNER' ? 'APPROVED' : null;
+  const updated = await prisma.user.update({ where: { id: user.id }, data: { role, partnerStatus }, include: withOrderCount });
+  res.json({ user: toAdminUser(updated) });
+});
+
+/** Approve or reject a delivery partner application. */
+adminUsersRouter.patch('/:id/partner-status', async (req, res) => {
+  const { status } = updatePartnerStatusSchema.parse(req.body);
+  const user = await findOtherUser(req);
+  if (user.role !== 'DELIVERY_PARTNER') throw new AppError(400, 'This user is not a delivery partner');
+
+  const updated = await prisma.user.update({ where: { id: user.id }, data: { partnerStatus: status }, include: withOrderCount });
   res.json({ user: toAdminUser(updated) });
 });
 

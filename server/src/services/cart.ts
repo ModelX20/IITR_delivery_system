@@ -19,6 +19,7 @@ export async function getCartSummary(userId: string): Promise<CartSummary> {
     items: lines.map((l, i) => ({
       itemId: l.itemId,
       name: l.item.name,
+      category: l.item.category,
       imageUrl: l.item.imageUrl,
       unitPrice: money(l.item.price),
       quantity: l.quantity,

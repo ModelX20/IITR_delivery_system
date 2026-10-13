@@ -12,6 +12,11 @@ export function istNextDayStart(date: string): Date {
   return new Date(istDayStart(date).getTime() + DAY_MS);
 }
 
+/** Start of the IST calendar month containing the given day ("YYYY-MM-DD"). */
+export function istMonthStart(date: string): Date {
+  return istDayStart(`${date.slice(0, 7)}-01`);
+}
+
 /** Today's date in IST as "YYYY-MM-DD". */
 export function istToday(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(now);

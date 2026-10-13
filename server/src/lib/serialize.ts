@@ -12,6 +12,7 @@ import type {
 } from '@iitr/shared';
 import { money } from './money';
 import type { AdminOrderWithDetail, OrderWithDetail } from './orderInclude';
+import { isProfileComplete } from './auth';
 
 export function toUser(user: DbUser): User {
   return {
@@ -20,8 +21,10 @@ export function toUser(user: DbUser): User {
     email: user.email,
     enrollmentNo: user.enrollmentNo,
     phone: user.phone,
-    bhawan: user.bhawan as Bhawan,
+    bhawan: user.bhawan as Bhawan | null,
     role: user.role,
+    partnerStatus: user.partnerStatus,
+    profileComplete: isProfileComplete(user),
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -92,6 +95,7 @@ export function toOrderDetail(order: OrderWithDetail): OrderDetail {
       changedAt: h.changedAt.toISOString(),
       changedBy: { name: h.changedBy.name, role: h.changedBy.role },
     })),
+    deliveryPartner: order.deliveryPartner,
   };
 }
 

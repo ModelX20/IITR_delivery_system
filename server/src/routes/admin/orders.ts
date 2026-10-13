@@ -7,7 +7,8 @@ import { adminOrderDetailInclude } from '../../lib/orderInclude';
 import { pageArgs, paginated } from '../../lib/pagination';
 import { toAdminOrderDetail, toAdminOrderSummary } from '../../lib/serialize';
 import { istDayStart, istNextDayStart } from '../../lib/time';
-import { currentUserId } from '../../middleware/auth';
+import { currentUser } from '../../middleware/auth';
+import { notifyStatusChanged } from '../../email/notify';
 import { changeOrderStatus } from '../../services/orderStatus';
 
 export const adminOrdersRouter = Router();
@@ -52,7 +53,9 @@ adminOrdersRouter.get('/:id', async (req, res) => {
 
 adminOrdersRouter.patch('/:id/status', async (req, res) => {
   const { status } = updateOrderStatusSchema.parse(req.body);
-  await changeOrderStatus({ orderId: req.params.id, to: status, actorId: currentUserId(req) });
+  const actor = currentUser(req);
+  await changeOrderStatus({ orderId: req.params.id, to: status, actorId: actor.id });
+  notifyStatusChanged(req.params.id, status, actor.role);
 
   const order = await prisma.order.findUniqueOrThrow({ where: { id: req.params.id }, include: adminOrderDetailInclude });
   res.json({ order: toAdminOrderDetail(order) });

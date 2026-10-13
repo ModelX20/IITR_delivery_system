@@ -13,6 +13,13 @@ enum Role {
   ADMIN
 }
 
+/// Delivery partner application state. Null for users who never signed up as a partner.
+enum PartnerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum OrderStatus {
   PLACED
   CONFIRMED
@@ -22,21 +29,43 @@ enum OrderStatus {
 }
 
 model User {
-  id            String               @id @default(cuid())
-  name          String
-  email         String               @unique
-  enrollmentNo  String               @unique
-  phone         String
-  bhawan        String
-  passwordHash  String
-  role          Role                 @default(STUDENT)
-  isBlocked     Boolean              @default(false)
-  createdAt     DateTime             @default(now())
-  cartItems     CartItem[]
-  orders        Order[]
-  statusChanges OrderStatusHistory[]
+  id                  String               @id @default(cuid())
+  name                String
+  email               String               @unique
+  // Optional so a first-time Google user can exist before completing their profile.
+  enrollmentNo        String?              @unique
+  phone               String?
+  bhawan              String?
+  // Null for Google-only accounts that have never set a password.
+  passwordHash        String?
+  googleId            String?              @unique
+  // Embedded in session tokens; bumping it logs out every existing session.
+  tokenVersion        Int                  @default(0)
+  role                Role                 @default(STUDENT)
+  // Delivery partners can only deliver once an admin has approved them.
+  partnerStatus       PartnerStatus?
+  isBlocked           Boolean              @default(false)
+  createdAt           DateTime             @default(now())
+  cartItems           CartItem[]
+  orders              Order[]              @relation("Customer")
+  statusChanges       OrderStatusHistory[]
+  passwordResetTokens PasswordResetToken[]
+  deliveries          Order[]              @relation("DeliveryPartner")
 
   @@index([role])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  // SHA-256 of the token. The raw token only ever exists in the emailed link.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Item {
@@ -67,21 +96,26 @@ model CartItem {
 }
 
 model Order {
-  id            String               @id @default(cuid())
-  userId        String
-  status        OrderStatus          @default(PLACED)
-  subtotal      Decimal              @db.Decimal(10, 2)
-  deliveryFee   Decimal              @db.Decimal(10, 2)
-  total         Decimal              @db.Decimal(10, 2)
-  bhawan        String
-  roomNo        String
-  note          String?
-  createdAt     DateTime             @default(now())
-  user          User                 @relation(fields: [userId], references: [id])
-  items         OrderItem[]
-  statusHistory OrderStatusHistory[]
+  id                String               @id @default(cuid())
+  userId            String
+  status            OrderStatus          @default(PLACED)
+  subtotal          Decimal              @db.Decimal(10, 2)
+  deliveryFee       Decimal              @db.Decimal(10, 2)
+  total             Decimal              @db.Decimal(10, 2)
+  bhawan            String
+  roomNo            String
+  note              String?
+  createdAt         DateTime             @default(now())
+  user              User                 @relation(fields: [userId], references: [id], name: "Customer")
+  items             OrderItem[]
+  statusHistory     OrderStatusHistory[]
+  // Set when a delivery partner accepts the order; from then on only they can see and deliver it.
+  deliveryPartnerId String?
+  deliveryPartner   User?                @relation("DeliveryPartner", fields: [deliveryPartnerId], references: [id])
+  acceptedAt        DateTime?
 
   @@index([userId, createdAt])
+  @@index([deliveryPartnerId, status])
   @@index([status, createdAt])
   @@index([createdAt])
   @@index([bhawan])

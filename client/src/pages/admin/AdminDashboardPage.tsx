@@ -1,12 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { ORDER_STATUSES, type AdminDashboard, type StoreSettings } from '@iitr/shared';
+import { ORDER_STATUSES, type AdminDashboard, type SalesTotals, type StoreSettings } from '@iitr/shared';
 import { api, errorMessage } from '../../api/client';
 import { EmptyState } from '../../components/EmptyState';
 import { StatusBadge, STATUS_LABEL } from '../../components/StatusBadge';
 import { FullPageSpinner, Spinner } from '../../components/Spinner';
-import { AlertIcon, ClipboardIcon, GridIcon, TagIcon, UsersIcon } from '../../components/icons';
+import { AlertIcon, GridIcon, TagIcon, TruckIcon, UsersIcon } from '../../components/icons';
 import { useApi } from '../../hooks/useApi';
 import { formatDateTime, formatPrice, shortOrderId } from '../../lib/format';
 import { PageHeader, useAdmin } from './AdminLayout';
@@ -19,6 +19,18 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
         <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
         <p className="text-lg font-bold break-words text-slate-900 sm:text-xl">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function SalesCard({ label, totals }: { label: string; totals: SalesTotals }) {
+  return (
+    <div className="card p-4">
+      <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900">{formatPrice(totals.revenue)}</p>
+      <p className="text-sm text-slate-500">
+        {totals.orders} {totals.orders === 1 ? 'order' : 'orders'}
+      </p>
     </div>
   );
 }
@@ -55,11 +67,33 @@ export function AdminDashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Today at a glance (IST)" />
+      <PageHeader title="Dashboard" subtitle="Sales, orders and stock at a glance" />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Orders today" value={data.ordersToday} icon={<ClipboardIcon />} />
-        <StatCard label="Revenue today" value={formatPrice(data.revenueToday)} icon={<span className="text-lg font-bold">₹</span>} />
+      {data.pendingPartners > 0 && (
+        <Link
+          to="/admin/users?partnerStatus=PENDING"
+          className="mb-6 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100"
+        >
+          <TruckIcon className="size-5 shrink-0" />
+          <span className="flex-1">
+            <strong>{data.pendingPartners}</strong> delivery partner {data.pendingPartners === 1 ? 'request is' : 'requests are'} waiting for
+            your approval.
+          </span>
+          <span className="font-semibold">Review →</span>
+        </Link>
+      )}
+
+      <section aria-label="Sales">
+        <h2 className="mb-3 font-semibold text-slate-900">Sales</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <SalesCard label="Today" totals={data.sales.today} />
+          <SalesCard label="Last 7 days" totals={data.sales.last7Days} />
+          <SalesCard label="This month" totals={data.sales.thisMonth} />
+        </div>
+        <p className="mt-2 text-xs text-slate-500">Revenue includes delivery fees and excludes cancelled orders. Days are IST.</p>
+      </section>
+
+      <div className="mt-6 grid grid-cols-2 gap-3">
         <StatCard label="Students" value={data.totalStudents} icon={<UsersIcon />} />
         <StatCard label="Items on sale" value={data.activeItems} icon={<TagIcon />} />
       </div>

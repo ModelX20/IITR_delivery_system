@@ -1,12 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { Role } from '@prisma/client';
-import { AUTH_COOKIE, clearCookieOptions, verifyToken } from '../lib/auth';
+import type { PartnerStatus, Role } from '@prisma/client';
+import { AUTH_COOKIE, clearCookieOptions, isProfileComplete, verifyToken } from '../lib/auth';
 import { AppError } from '../lib/errors';
 import { prisma } from '../lib/prisma';
 
 export interface AuthUser {
   id: string;
   role: Role;
+  partnerStatus: PartnerStatus | null;
+  profileComplete: boolean;
 }
 
 declare global {
@@ -19,29 +21,49 @@ declare global {
 
 export const BLOCKED_MESSAGE = 'Your account has been blocked. Please contact the admin.';
 
+export const INCOMPLETE_PROFILE_MESSAGE = 'Please complete your profile (enrollment number, bhawan and phone) before ordering.';
+
 /**
- * Verifies the session cookie and loads the user's current role and blocked flag from the database,
- * so role changes and blocks take effect on the very next request, even for existing sessions.
+ * Verifies the session cookie and loads the user's current role, blocked flag and token version from the
+ * database, so role changes, blocks and password resets take effect on the very next request.
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.[AUTH_COOKIE];
-  const userId = token ? verifyToken(token) : null;
-  if (!userId) throw new AppError(401, 'Please log in to continue');
+  const session = token ? verifyToken(token) : null;
+  if (!session) throw new AppError(401, 'Please log in to continue');
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true, isBlocked: true },
+    where: { id: session.userId },
+    select: { id: true, role: true, partnerStatus: true, isBlocked: true, tokenVersion: true, enrollmentNo: true, phone: true, bhawan: true },
   });
-  if (!user) {
+  if (!user || user.tokenVersion !== session.version) {
     res.clearCookie(AUTH_COOKIE, clearCookieOptions);
-    throw new AppError(401, 'Please log in to continue');
+    throw new AppError(401, user ? 'Your session has expired. Please log in again.' : 'Please log in to continue');
   }
   if (user.isBlocked) {
     res.clearCookie(AUTH_COOKIE, clearCookieOptions);
     throw new AppError(403, BLOCKED_MESSAGE);
   }
 
-  req.user = { id: user.id, role: user.role };
+  req.user = { id: user.id, role: user.role, partnerStatus: user.partnerStatus, profileComplete: isProfileComplete(user) };
+  next();
+}
+
+/** Delivery routes: the user must be a delivery partner whose application an admin has approved. Use after requireAuth. */
+export function requireApprovedPartner(req: Request, _res: Response, next: NextFunction) {
+  const user = currentUser(req);
+  if (user.role !== 'DELIVERY_PARTNER') throw new AppError(403, "You don't have permission to do that");
+  if (user.partnerStatus !== 'APPROVED') {
+    throw new AppError(403, user.partnerStatus === 'REJECTED'
+      ? 'Your delivery partner application was not approved.'
+      : 'Your delivery partner account is waiting for admin approval.');
+  }
+  next();
+}
+
+/** Blocks ordering until a Google sign-up has added enrollment number, bhawan and phone. Use after requireAuth. */
+export function requireCompleteProfile(req: Request, _res: Response, next: NextFunction) {
+  if (!currentUser(req).profileComplete) throw new AppError(403, INCOMPLETE_PROFILE_MESSAGE);
   next();
 }
 

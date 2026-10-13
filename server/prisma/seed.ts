@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, type OrderStatus, type Role } from '@prisma/client';
+import { Prisma, PrismaClient, type OrderStatus, type PartnerStatus, type Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -10,14 +10,6 @@ type SeedItem = {
   category: string;
   price: string;
   stock: number;
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Snacks: 'f59e0b',
-  Beverages: '0ea5e9',
-  Stationery: '8b5cf6',
-  Essentials: '10b981',
-  Food: 'ef4444',
 };
 
 const items: SeedItem[] = [
@@ -59,25 +51,34 @@ const items: SeedItem[] = [
   { id: 'item-veg-thali', name: 'Veg Thali', description: 'Dal, sabzi, rice, 4 rotis and salad', category: 'Food', price: '120.00', stock: 15 },
 ];
 
-function placeholderImage(name: string, category: string) {
-  const color = CATEGORY_COLORS[category] ?? '64748b';
-  return `https://placehold.co/400x300/${color}/ffffff/png?text=${encodeURIComponent(name)}`;
-}
-
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is not set. Copy server/.env.example to server/.env first.`);
   return value;
 }
 
-type SeedUser = { name: string; email: string; enrollmentNo: string; phone: string; bhawan: string; role: Role; passwordEnv: string };
+type SeedUser = {
+  name: string;
+  email: string;
+  enrollmentNo: string;
+  phone: string;
+  bhawan: string;
+  role: Role;
+  partnerStatus?: PartnerStatus;
+  passwordEnv: string;
+};
 
 const users: SeedUser[] = [
-  { name: 'Test Student', email: 'test@iitr.ac.in', enrollmentNo: '21110001', phone: '9876543210', bhawan: 'Rajendra', role: 'STUDENT', passwordEnv: 'SEED_TEST_PASSWORD' },
+  { name: 'Aarav Gupta', email: 'test@iitr.ac.in', enrollmentNo: '21110001', phone: '9876543210', bhawan: 'Rajendra', role: 'STUDENT', passwordEnv: 'SEED_TEST_PASSWORD' },
   { name: 'Riya Sharma', email: 'riya@iitr.ac.in', enrollmentNo: '22115042', phone: '9123456780', bhawan: 'Sarojini', role: 'STUDENT', passwordEnv: 'SEED_TEST_PASSWORD' },
-  { name: 'Store Admin', email: 'admin@iitr.ac.in', enrollmentNo: '10000001', phone: '9000000001', bhawan: 'Cautley', role: 'ADMIN', passwordEnv: 'SEED_ADMIN_PASSWORD' },
-  { name: 'Arjun Mehta', email: 'delivery@iitr.ac.in', enrollmentNo: '21112077', phone: '9000000002', bhawan: 'Govind', role: 'DELIVERY_PARTNER', passwordEnv: 'SEED_DELIVERY_PASSWORD' },
+  { name: 'Neha Kapoor', email: 'admin@iitr.ac.in', enrollmentNo: '10000001', phone: '9000000001', bhawan: 'Cautley', role: 'ADMIN', passwordEnv: 'SEED_ADMIN_PASSWORD' },
+  { name: 'Arjun Mehta', email: 'delivery@iitr.ac.in', enrollmentNo: '21112077', phone: '9000000002', bhawan: 'Govind', role: 'DELIVERY_PARTNER', partnerStatus: 'APPROVED', passwordEnv: 'SEED_DELIVERY_PASSWORD' },
+  // A sign-up waiting for approval, so the admin's "Approve" flow can be tried.
+  { name: 'Kabir Rao', email: 'kabir@iitr.ac.in', enrollmentNo: '23113019', phone: '9000000003', bhawan: 'Azad', role: 'DELIVERY_PARTNER', partnerStatus: 'PENDING', passwordEnv: 'SEED_DELIVERY_PASSWORD' },
 ];
+
+/** Demo orders that Arjun (delivery@iitr.ac.in) accepted and delivered / is delivering. */
+const DELIVERED_BY_PARTNER = ['cmdemoseed0001', 'cmdemoseed0003', 'cmdemoseed0006'];
 
 type SeedOrder = {
   id: string;
@@ -110,7 +111,7 @@ function statusPath(order: SeedOrder): OrderStatus[] {
   return FORWARD.slice(0, FORWARD.indexOf(order.status) + 1);
 }
 
-async function seedOrders(userIds: Map<string, string>, adminId: string) {
+async function seedOrders(userIds: Map<string, string>, adminId: string, partnerId: string) {
   let created = 0;
   for (const order of orders) {
     if (await prisma.order.findUnique({ where: { id: order.id } })) continue;
@@ -124,6 +125,7 @@ async function seedOrders(userIds: Map<string, string>, adminId: string) {
     const deliveryFee = subtotal.greaterThan(300) ? new Prisma.Decimal(0) : new Prisma.Decimal(20);
     const placedAt = new Date(Date.now() - order.hoursAgo * 3600_000);
     const userId = userIds.get(order.user)!;
+    const byPartner = DELIVERED_BY_PARTNER.includes(order.id);
 
     await prisma.order.create({
       data: {
@@ -137,11 +139,17 @@ async function seedOrders(userIds: Map<string, string>, adminId: string) {
         roomNo: order.roomNo,
         note: order.note,
         createdAt: placedAt,
+        ...(byPartner && { deliveryPartnerId: partnerId, acceptedAt: new Date(placedAt.getTime() + 20 * 60_000) }),
         items: { create: lines },
         statusHistory: {
           create: statusPath(order).map((status, i) => ({
             status,
-            changedById: status === 'PLACED' || (status === 'CANCELLED' && order.cancelledBy === 'student') ? userId : adminId,
+            changedById:
+              status === 'PLACED' || (status === 'CANCELLED' && order.cancelledBy === 'student')
+                ? userId
+                : byPartner && (status === 'OUT_FOR_DELIVERY' || status === 'DELIVERED')
+                  ? partnerId
+                  : adminId,
             changedAt: new Date(placedAt.getTime() + i * 15 * 60_000),
           })),
         },
@@ -149,12 +157,18 @@ async function seedOrders(userIds: Map<string, string>, adminId: string) {
     });
     created++;
   }
+  // Demo orders created before delivery partners existed: assign them to Arjun once.
+  await prisma.order.updateMany({
+    where: { id: { in: DELIVERED_BY_PARTNER }, deliveryPartnerId: null },
+    data: { deliveryPartnerId: partnerId, acceptedAt: new Date() },
+  });
   console.log(`Seeded ${created} sample orders (${orders.length - created} already existed)`);
 }
 
 async function main() {
   for (const item of items) {
-    const data = { ...item, imageUrl: placeholderImage(item.name, item.category), isActive: true };
+    // No imageUrl: the app shows an illustrated tile for each item. Admins can add a photo URL later.
+    const data = { ...item, imageUrl: '', isActive: true };
     await prisma.item.upsert({ where: { id: item.id }, create: data, update: data });
   }
   console.log(`Seeded ${items.length} items`);
@@ -165,14 +179,14 @@ async function main() {
     const saved = await prisma.user.upsert({
       where: { email: user.email },
       create: { ...user, passwordHash },
-      update: { passwordHash, role: user.role, isBlocked: false },
+      update: { name: user.name, passwordHash, role: user.role, partnerStatus: user.partnerStatus ?? null, isBlocked: false },
     });
     userIds.set(user.email, saved.id);
     console.log(`Seeded ${user.role.toLowerCase()} ${user.email} (password = ${passwordEnv} from .env)`);
   }
 
   await prisma.storeSettings.upsert({ where: { id: 1 }, create: { id: 1 }, update: {} });
-  await seedOrders(userIds, userIds.get('admin@iitr.ac.in')!);
+  await seedOrders(userIds, userIds.get('admin@iitr.ac.in')!, userIds.get('delivery@iitr.ac.in')!);
 }
 
 main()

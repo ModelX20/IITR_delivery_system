@@ -1,13 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { LoginInput, RegisterInput, User } from '@iitr/shared';
+import type { CompleteProfileInput, LoginInput, RegisterFormInput, User } from '@iitr/shared';
 import { api, AUTH_EXPIRED_EVENT } from '../api/client';
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (input: LoginInput) => Promise<User>;
-  register: (input: RegisterInput) => Promise<User>;
+  register: (input: RegisterFormInput) => Promise<User>;
   logout: () => Promise<void>;
+  completeProfile: (input: CompleteProfileInput) => Promise<User>;
+  /** Re-reads the current user from the server (e.g. to see if an admin approved them). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user;
   }, []);
 
-  const register = useCallback(async (input: RegisterInput) => {
+  const register = useCallback(async (input: RegisterFormInput) => {
     const { user } = await api<{ user: User }>('/auth/register', { method: 'POST', body: input });
     setUser(user);
     return user;
@@ -47,7 +50,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ user, loading, login, register, logout }), [user, loading, login, register, logout]);
+  const completeProfile = useCallback(async (input: CompleteProfileInput) => {
+    const { user } = await api<{ user: User }>('/auth/profile', { method: 'PATCH', body: input });
+    setUser(user);
+    return user;
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const { user } = await api<{ user: User }>('/auth/me');
+    setUser(user);
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout, completeProfile, refreshUser }),
+    [user, loading, login, register, logout, completeProfile, refreshUser],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

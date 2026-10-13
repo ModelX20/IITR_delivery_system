@@ -23,7 +23,12 @@ export default defineConfig({
       NODE_ENV: 'test',
       DATABASE_URL: testDatabaseUrl,
       JWT_SECRET: process.env.JWT_SECRET ?? 'test-secret-at-least-16-chars',
-      CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5173',
+      CLIENT_URL: 'http://localhost:5173',
+      // Fake credentials so Google sign-in is "enabled"; tests stub the call to Google itself.
+      GOOGLE_CLIENT_ID: 'test-client-id.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'test-client-secret',
+      GOOGLE_CALLBACK_URL: 'http://localhost:5173/api/auth/google/callback',
+      SMTP_HOST: '',
     },
   },
 });

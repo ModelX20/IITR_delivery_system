@@ -7,6 +7,7 @@ export const orderDetailInclude = {
     orderBy: { changedAt: 'asc' },
     include: { changedBy: { select: { name: true, role: true } } },
   },
+  deliveryPartner: { select: { name: true, phone: true } },
 } satisfies Prisma.OrderInclude;
 
 export const adminOrderDetailInclude = {

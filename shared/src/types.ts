@@ -1,16 +1,25 @@
 // Shapes of API responses. Money values are strings with 2 decimals (e.g. "120.00")
 // so no precision is lost going through JSON.
-import type { Bhawan, OrderStatus, Role } from './config';
+import type { Bhawan, OrderStatus, PartnerStatus, Role } from './config';
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  enrollmentNo: string;
-  phone: string;
-  bhawan: Bhawan;
+  /** Null until a Google sign-up completes their profile. */
+  enrollmentNo: string | null;
+  phone: string | null;
+  bhawan: Bhawan | null;
   role: Role;
+  /** Delivery partners only: they can deliver once an admin has APPROVED them. */
+  partnerStatus: PartnerStatus | null;
+  /** True once enrollment number, phone and bhawan are all set. Students need this to order. */
+  profileComplete: boolean;
   createdAt: string;
+}
+
+export interface AuthConfig {
+  googleEnabled: boolean;
 }
 
 export interface Item {
@@ -26,6 +35,7 @@ export interface Item {
 export interface CartLine {
   itemId: string;
   name: string;
+  category: string;
   imageUrl: string;
   unitPrice: string;
   quantity: number;
@@ -69,6 +79,8 @@ export interface OrderDetail {
   createdAt: string;
   items: OrderLine[];
   statusHistory: StatusChange[];
+  /** Who is delivering it, once a partner has accepted. */
+  deliveryPartner: { name: string; phone: string | null } | null;
 }
 
 export interface StatusChange {
@@ -102,8 +114,8 @@ export interface OrderCustomer {
   id: string;
   name: string;
   email: string;
-  enrollmentNo: string;
-  phone: string;
+  enrollmentNo: string | null;
+  phone: string | null;
 }
 
 export interface AdminOrderSummary extends OrderSummary {
@@ -125,9 +137,17 @@ export interface StoreSettings {
   lowStockThreshold: number;
 }
 
+export interface SalesTotals {
+  orders: number;
+  revenue: string;
+}
+
 export interface AdminDashboard {
   ordersToday: number;
   revenueToday: string;
+  /** Non-cancelled orders, by IST calendar periods. */
+  sales: { today: SalesTotals; last7Days: SalesTotals; thisMonth: SalesTotals };
+  pendingPartners: number;
   ordersByStatus: Record<OrderStatus, number>;
   totalStudents: number;
   activeItems: number;
@@ -135,4 +155,29 @@ export interface AdminDashboard {
   lowStockCount: number;
   lowStockItems: AdminItem[];
   recentOrders: AdminOrderSummary[];
+}
+
+// ---------- Delivery partners ----------
+
+export interface DeliveryOrder {
+  id: string;
+  status: OrderStatus;
+  createdAt: string;
+  acceptedAt: string | null;
+  bhawan: string;
+  roomNo: string;
+  note: string | null;
+  /** Cash to collect from the student (Cash on Delivery). */
+  total: string;
+  itemCount: number;
+  items: { itemName: string; quantity: number }[];
+  /** Only shown once the order is assigned to you. */
+  customer: { name: string; phone: string | null } | null;
+}
+
+export interface DeliveryDashboard {
+  available: DeliveryOrder[];
+  active: DeliveryOrder[];
+  history: DeliveryOrder[];
+  stats: { delivered: number; cashCollected: string };
 }

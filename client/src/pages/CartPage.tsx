@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { EmptyState } from '../components/EmptyState';
 import { Field, fieldProps } from '../components/Field';
+import { ItemImage } from '../components/ItemImage';
 import { PaymentNote } from '../components/PaymentNote';
 import { QuantityStepper } from '../components/QuantityStepper';
 import { FullPageSpinner, Spinner } from '../components/Spinner';
@@ -21,7 +22,7 @@ export function CartPage() {
   const { cart, loading, pending, setQuantity, remove, refresh } = useCart();
   const navigate = useNavigate();
 
-  const [delivery, setDelivery] = useState({ bhawan: user?.bhawan ?? '', roomNo: '', note: '' });
+  const [delivery, setDelivery] = useState<{ bhawan: string; roomNo: string; note: string }>({ bhawan: user?.bhawan ?? '', roomNo: '', note: '' });
   const [errors, setErrors] = useState<FieldErrors<PlaceOrderInput>>({});
   const [placing, setPlacing] = useState(false);
 
@@ -80,7 +81,9 @@ export function CartPage() {
             const overStock = line.quantity > line.stock;
             return (
               <div key={line.itemId} className={`flex gap-4 p-4 ${busy ? 'opacity-60' : ''}`}>
-                <img src={line.imageUrl} alt="" className="size-20 shrink-0 rounded-lg bg-slate-100 object-cover sm:size-24" />
+                <div className="size-20 shrink-0 overflow-hidden rounded-lg sm:size-24">
+                  <ItemImage name={line.name} category={line.category} imageUrl={line.imageUrl} size="md" />
+                </div>
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -167,9 +170,17 @@ export function CartPage() {
                 </dd>
               </div>
               {Number(cart.deliveryFee) > 0 && (
-                <p className="rounded-lg bg-gold-400/10 px-3 py-2 text-xs text-amber-800">
-                  Free delivery on orders above {formatPrice(FREE_DELIVERY_ABOVE)}. You're at {formatPrice(cart.subtotal)}.
-                </p>
+                <div className="rounded-lg bg-gold-400/10 px-3 py-2.5 text-xs text-amber-900">
+                  <p>
+                    Free delivery on orders above ₹{FREE_DELIVERY_ABOVE}. You're at {formatPrice(cart.subtotal)}.
+                  </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-200/60" aria-hidden="true">
+                    <div
+                      className="h-full rounded-full bg-gold-500 transition-all"
+                      style={{ width: `${Math.min(100, (Number(cart.subtotal) / FREE_DELIVERY_ABOVE) * 100)}%` }}
+                    />
+                  </div>
+                </div>
               )}
               <div className="flex justify-between border-t border-slate-100 pt-3 text-base">
                 <dt className="font-semibold text-slate-900">Total</dt>

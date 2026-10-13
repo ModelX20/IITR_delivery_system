@@ -8,12 +8,14 @@ import { currentUserId } from '../middleware/auth';
 import { placeOrder } from '../services/order';
 import { cancelOwnOrder } from '../services/orderStatus';
 import { reorder } from '../services/reorder';
+import { notifyOrderPlaced, notifyStatusChanged } from '../email/notify';
 
 export const ordersRouter = Router();
 
 ordersRouter.post('/', async (req, res) => {
   const input = placeOrderSchema.parse(req.body);
   const order = await placeOrder(currentUserId(req), input);
+  notifyOrderPlaced(order.id);
   res.status(201).json({ order: toOrderDetail(order) });
 });
 
@@ -38,6 +40,7 @@ ordersRouter.get('/:id', async (req, res) => {
 
 ordersRouter.post('/:id/cancel', async (req, res) => {
   const order = await cancelOwnOrder(req.params.id, currentUserId(req));
+  notifyStatusChanged(order.id, 'CANCELLED', 'STUDENT');
   res.json({ order: toOrderDetail(order) });
 });
 

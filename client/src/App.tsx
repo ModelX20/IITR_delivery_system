@@ -9,6 +9,9 @@ import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
 import { DeliveryHomePage } from './pages/delivery/DeliveryHomePage';
 import { CartPage } from './pages/CartPage';
+import { CompleteProfilePage } from './pages/CompleteProfilePage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { CatalogPage } from './pages/CatalogPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -23,7 +26,10 @@ export function App() {
       <Route element={<PublicOnlyRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       </Route>
+      {/* Reachable logged in or out: the link arrives by email. */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       <Route element={<RequireRole roles={['ADMIN']} />}>
         <Route path="/admin" element={<AdminLayout />}>
@@ -44,6 +50,7 @@ export function App() {
       </Route>
 
       <Route element={<RequireRole roles={['STUDENT']} />}>
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route element={<StudentLayout />}>
           <Route path="/" element={<CatalogPage />} />
           <Route path="/cart" element={<CartPage />} />

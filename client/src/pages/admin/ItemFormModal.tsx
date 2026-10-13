@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { CATEGORIES, createItemSchema, type AdminItem, type CreateItemInput } from '@iitr/shared';
 import { api, errorMessage } from '../../api/client';
 import { Field, fieldProps } from '../../components/Field';
+import { ItemImage } from '../../components/ItemImage';
 import { Modal } from '../../components/Modal';
 import { Spinner } from '../../components/Spinner';
 import { validate, type FieldErrors } from '../../lib/forms';
@@ -108,7 +109,7 @@ export function ItemFormModal({
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <Field id="imageUrl" label="Image URL" error={errors.imageUrl}>
+            <Field id="imageUrl" label="Photo URL (optional)" error={errors.imageUrl} hint="Leave empty to use the illustrated tile.">
               <input
                 {...fieldProps('imageUrl', errors.imageUrl)}
                 type="url"
@@ -119,9 +120,14 @@ export function ItemFormModal({
               />
             </Field>
           </div>
-          {values.imageUrl.startsWith('http') && (
-            <img src={values.imageUrl} alt="" className="mt-6 size-16 shrink-0 rounded-lg bg-slate-100 object-cover" />
-          )}
+          <div className="mt-6 size-16 shrink-0 overflow-hidden rounded-lg" aria-label="Preview">
+            <ItemImage
+              name={values.name || 'New item'}
+              category={values.category}
+              imageUrl={values.imageUrl.startsWith('http') ? values.imageUrl : ''}
+              size="sm"
+            />
+          </div>
         </div>
         <label className="flex items-center gap-3 text-sm text-slate-700">
           <input type="checkbox" className="size-4 accent-brand-700" checked={values.isActive} onChange={set('isActive')} />
