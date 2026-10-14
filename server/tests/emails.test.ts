@@ -2,13 +2,15 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import request from 'supertest';
 import { prisma } from '../src/lib/prisma';
 import { mailer } from '../src/email/mailer';
-import { adminAgent, app, createItem, loggedInUser, placeOrder, resetDb, sentEmails, userData } from './helpers';
+import { adminAgent, app, createItem, loggedInUser, placeOrder, register, resetDb, sentEmails, userData } from './helpers';
 
 beforeEach(resetDb);
 afterEach(() => vi.restoreAllMocks());
 afterAll(() => prisma.$disconnect());
 
-const subjects = async (to: string) => (await sentEmails()).filter((e) => e.to === to).map((e) => e.subject);
+// Sign-up verification codes are covered in signup.test.ts; these tests look at notification emails.
+const subjects = async (to: string) =>
+  (await sentEmails()).filter((e) => e.to === to && !e.subject.includes('verification code')).map((e) => e.subject);
 
 describe('email notifications', () => {
   it('sends a welcome email on registration', async () => {
@@ -68,12 +70,17 @@ describe('email notifications', () => {
   });
 
   it('never fails the request when sending email fails', async () => {
-    const send = vi.spyOn(mailer, 'send').mockRejectedValue(new Error('SMTP server down'));
+    // Notification emails fail; the sign-up code itself still gets through (it has its own error handling).
+    const realSend = mailer.send.bind(mailer);
+    const send = vi.spyOn(mailer, 'send').mockImplementation(async (email) => {
+      if (email.subject.includes('verification code')) return realSend(email);
+      throw new Error('SMTP server down');
+    });
     const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
     const item = await createItem();
 
-    const register = await request.agent(app).post('/api/auth/register').send(userData());
-    expect(register.status).toBe(201);
+    const registered = await register(request.agent(app), userData());
+    expect(registered.status).toBe(201);
 
     const { agent } = await loggedInUser();
     const order = await agent.post('/api/cart').send({ itemId: item.id, quantity: 1 }).then(() =>

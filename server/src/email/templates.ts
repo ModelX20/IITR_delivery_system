@@ -1,5 +1,5 @@
 import type { OrderStatus } from '@prisma/client';
-import { PASSWORD_RESET_TTL_MINUTES, PAYMENT_METHOD_LABEL } from '@iitr/shared';
+import { PASSWORD_RESET_TTL_MINUTES, PAYMENT_METHOD_LABEL, SIGNUP_CODE } from '@iitr/shared';
 import { env } from '../config/env';
 
 export interface OrderForEmail {
@@ -120,5 +120,23 @@ export function passwordResetEmail(name: string, resetUrl: string): Template {
     subject: 'Reset your IITR Delivery password',
     html: layout(heading, body, { label: 'Choose a new password', url: resetUrl }),
     text: `${heading}\n\nOpen this link to choose a new password (valid for ${PASSWORD_RESET_TTL_MINUTES} minutes, single use):\n${resetUrl}\n\nIf you didn't ask for this, ignore this email.`,
+  };
+}
+
+export function signupCodeEmail(name: string, code: string): Template {
+  const heading = `Verify your email, ${firstName(name)}`;
+  const body = `<p>Enter this code on the IITR Delivery sign-up page to finish creating your account:</p>
+<p style="margin:24px 0;font-size:34px;font-weight:700;letter-spacing:10px;color:#14295c">${escapeHtml(code)}</p>
+<p>It expires in ${SIGNUP_CODE.ttlMinutes} minutes. Don't share it with anyone.</p>
+<p style="color:#64748b;font-size:13px">If you didn't try to sign up, you can ignore this email. No account will be created.</p>`;
+  return {
+    subject: `${code} is your IITR Delivery verification code`,
+    html: layout(heading, body),
+    text: `${heading}
+
+Your verification code is ${code}
+It expires in ${SIGNUP_CODE.ttlMinutes} minutes. Don't share it with anyone.
+
+If you didn't try to sign up, ignore this email.`,
   };
 }

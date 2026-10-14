@@ -14,7 +14,7 @@ export async function resetDb() {
   await flushBackground();
   outbox.length = 0;
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "PasswordResetToken", "OrderStatusHistory", "OrderItem", "Order", "CartItem", "Item", "User" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "PendingRegistration", "PasswordResetToken", "OrderStatusHistory", "OrderItem", "Order", "CartItem", "Item", "User" RESTART IDENTITY CASCADE',
   );
   await prisma.storeSettings.upsert({ where: { id: 1 }, create: { id: 1 }, update: { lowStockThreshold: 5 } });
 }
@@ -59,10 +59,27 @@ export async function loggedInAgent(overrides: Record<string, string> = {}) {
 export async function loggedInUser(overrides: Record<string, string> = {}, role: Role = 'STUDENT') {
   const agent = request.agent(app);
   const data = userData(overrides);
-  const res = await agent.post('/api/auth/register').send(data);
+  const res = await register(agent, data);
   if (res.status !== 201) throw new Error(`Register failed: ${res.status} ${JSON.stringify(res.body)}`);
   if (role !== 'STUDENT') await prisma.user.update({ where: { id: res.body.user.id }, data: { role } });
   return { agent, id: res.body.user.id as string, email: data.email, password: data.password };
+}
+
+/** The most recent sign-up code emailed to this address. */
+export function latestSignupCode(email: string): string {
+  const mail = [...outbox].reverse().find((e) => e.to === email.toLowerCase() && e.subject.includes('verification code'));
+  if (!mail) throw new Error(`No verification code was emailed to ${email}`);
+  return /\b(\d{6})\b/.exec(mail.subject)![1];
+}
+
+/**
+ * Full email-verified sign-up: submit the form, read the emailed code, verify it.
+ * Returns the verify response (201 + user on success), or the form's error response if that step failed.
+ */
+export async function register(agent: Agent, data: Record<string, string>) {
+  const start = await agent.post('/api/auth/register').send(data);
+  if (start.status !== 200) return start;
+  return agent.post('/api/auth/register/verify').send({ email: data.email, code: latestSignupCode(data.email) });
 }
 
 export async function adminAgent() {

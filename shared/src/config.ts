@@ -58,6 +58,15 @@ export function isAllowedGoogleEmail(email: string): boolean {
 
 export const PASSWORD_RESET_TTL_MINUTES = 30;
 
+/** Email verification codes sent during sign-up. */
+export const SIGNUP_CODE = {
+  length: 6,
+  ttlMinutes: 10,
+  maxAttempts: 5,
+  resendCooldownSeconds: 60,
+  maxResends: 5,
+} as const;
+
 /** Where each role lands after logging in. */
 export const ROLE_HOME: Record<Role, string> = {
   STUDENT: '/',

@@ -55,7 +55,12 @@ Vercel then adds `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPO
 | `JWT_SECRET` | A long random string. Generate one locally: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` | **Yes** |
 | `DATABASE_URL`, `DATABASE_URL_UNPOOLED` | Added by step 2. Don't type these yourself. | Yes (automatic) |
 | `CLIENT_URL` | Your site URL, e.g. `https://iitr-delivery.vercel.app`. Set it if you add a custom domain; otherwise it defaults to the project's production domain. | Optional |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Real email delivery, e.g. a Gmail address with an [app password](https://support.google.com/accounts/answer/185833) (`smtp.gmail.com`, `465`, `true`), or a free [Brevo](https://www.brevo.com) SMTP account. **Without these, the site works but sends no emails, including password-reset emails.** | Optional |
+| `SMTP_HOST` | `smtp.gmail.com` | **Yes**, sign-up needs it |
+| `SMTP_PORT` | `587` | **Yes** |
+| `SMTP_SECURE` | `false` | **Yes** |
+| `SMTP_USER` | Your sending Gmail address, e.g. `sandradeliveryiitr@gmail.com` | **Yes** |
+| `SMTP_PASS` | That account's 16-character [app password](https://support.google.com/accounts/answer/185833), without spaces. Never put it in GitHub. | **Yes** |
+| `MAIL_FROM` | `IITR Delivery <sandradeliveryiitr@gmail.com>` | **Yes** |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` | Google sign-in (postponed). The callback is `https://<your-domain>/api/auth/google/callback`. | Later |
 
 `NODE_ENV` is set to `production` automatically. Don't set `DATABASE_URL` to the local `localhost` value.
@@ -114,6 +119,7 @@ Useful places in Vercel:
 
 - **Cold starts:** the first request after a quiet period can take 1–3 seconds while the function and database wake up (Neon's free tier sleeps when idle).
 - **Login rate limit:** it is per function instance, so it's weaker on Vercel than on a single server.
-- **Emails:** sent with `waitUntil` so they finish after the response. Without SMTP settings they are skipped and logged.
+- **Emails:** sign-up codes are sent while the user waits, so they know immediately if sending failed. Other emails are sent with `waitUntil` so they finish after the response. **Without the SMTP settings nobody can sign up**, because the verification code can't be sent.
+- **Gmail limits:** a normal Gmail account can send roughly 500 emails a day, plenty for a campus project.
 - **Node version:** the function runs on Node 22 (`NODE_RUNTIME` in `scripts/vercel-build.mjs`). If Vercel retires it, change that line.
 - **Local development is unchanged:** `npm run db` + `npm run dev`. The Vercel build only runs on Vercel, or locally with `npm run vercel-build`, which writes to the git-ignored `.vercel/`.

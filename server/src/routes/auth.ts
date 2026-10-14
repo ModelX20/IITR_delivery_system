@@ -9,7 +9,9 @@ import {
   isAllowedGoogleEmail,
   loginSchema,
   registerSchema,
+  resendSignupCodeSchema,
   resetPasswordSchema,
+  verifySignupSchema,
   type AuthConfig,
 } from '@iitr/shared';
 import { env } from '../config/env';
@@ -32,6 +34,7 @@ import { BLOCKED_MESSAGE, currentUserId, requireAuth } from '../middleware/auth'
 import { authRateLimit } from '../middleware/rateLimit';
 import { notifyPasswordReset, notifyWelcome } from '../email/notify';
 import { googleAuth } from '../services/google';
+import { resendSignupCode, startSignup, verifySignup } from '../services/signup';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -48,25 +51,19 @@ authRouter.get('/config', (_req, res) => {
 
 // ---------- Email + password ----------
 
+// Sign-up is two steps: /register emails a 6-digit code, /register/verify creates the account if it's right.
 authRouter.post('/register', authRateLimit, async (req, res) => {
-  const { password, role, ...data } = registerSchema.parse(req.body);
+  res.json(await startSignup(registerSchema.parse(req.body)));
+});
 
-  if (await prisma.user.findUnique({ where: { email: data.email } })) {
-    throw new AppError(409, 'An account with this email is already registered');
-  }
-  if (await prisma.user.findUnique({ where: { enrollmentNo: data.enrollmentNo } })) {
-    throw new AppError(409, 'This enrollment number is already registered');
-  }
+authRouter.post('/register/resend', authRateLimit, async (req, res) => {
+  const { email } = resendSignupCodeSchema.parse(req.body);
+  res.json(await resendSignupCode(email));
+});
 
-  const user = await prisma.user.create({
-    data: {
-      ...data,
-      role,
-      // Delivery partners can log in straight away but can only deliver once an admin approves them.
-      partnerStatus: role === 'DELIVERY_PARTNER' ? 'PENDING' : null,
-      passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
-    },
-  });
+authRouter.post('/register/verify', authRateLimit, async (req, res) => {
+  const { email, code } = verifySignupSchema.parse(req.body);
+  const user = await verifySignup(email, code);
 
   startSession(res, user);
   notifyWelcome(user);

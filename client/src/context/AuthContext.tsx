@@ -1,12 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { CompleteProfileInput, LoginInput, RegisterFormInput, User } from '@iitr/shared';
+import type { CompleteProfileInput, LoginInput, RegisterFormInput, SignupStarted, User } from '@iitr/shared';
 import { api, AUTH_EXPIRED_EVENT } from '../api/client';
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (input: LoginInput) => Promise<User>;
-  register: (input: RegisterFormInput) => Promise<User>;
+  /** Step 1 of sign-up: validates the form and emails a verification code. No account exists yet. */
+  startSignup: (input: RegisterFormInput) => Promise<SignupStarted>;
+  /** Step 2: creates the account (and logs in) if the code is right. */
+  verifySignup: (email: string, code: string) => Promise<User>;
   logout: () => Promise<void>;
   completeProfile: (input: CompleteProfileInput) => Promise<User>;
   /** Re-reads the current user from the server (e.g. to see if an admin approved them). */
@@ -36,8 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user;
   }, []);
 
-  const register = useCallback(async (input: RegisterFormInput) => {
-    const { user } = await api<{ user: User }>('/auth/register', { method: 'POST', body: input });
+  const startSignup = useCallback(
+    (input: RegisterFormInput) => api<SignupStarted>('/auth/register', { method: 'POST', body: input }),
+    [],
+  );
+
+  const verifySignup = useCallback(async (email: string, code: string) => {
+    const { user } = await api<{ user: User }>('/auth/register/verify', { method: 'POST', body: { email, code } });
     setUser(user);
     return user;
   }, []);
@@ -62,8 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, completeProfile, refreshUser }),
-    [user, loading, login, register, logout, completeProfile, refreshUser],
+    () => ({ user, loading, login, startSignup, verifySignup, logout, completeProfile, refreshUser }),
+    [user, loading, login, startSignup, verifySignup, logout, completeProfile, refreshUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

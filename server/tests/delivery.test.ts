@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../src/lib/prisma';
-import { adminAgent, app, createItem, loggedInUser, placeOrder, resetDb, type Agent } from './helpers';
+import { adminAgent, app, createItem, loggedInUser, placeOrder, register, resetDb, type Agent } from './helpers';
 
 let admin: Agent;
 
@@ -159,32 +159,30 @@ describe('delivery partner access', () => {
 });
 
 describe('sign-up with a role', () => {
-  const register = (role?: string) =>
-    request(app)
-      .post('/api/auth/register')
-      .send({
-        name: 'New Person',
-        email: `new${Math.random().toString(36).slice(2, 8)}@iitr.ac.in`,
-        enrollmentNo: String(Math.floor(10000000 + Math.random() * 89999999)),
-        bhawan: 'Azad',
-        phone: '9876543210',
-        password: 'password123',
-        ...(role && { role }),
-      });
+  const signUp = (role?: string) =>
+    register(request.agent(app), {
+      name: 'New Person',
+      email: `new${Math.random().toString(36).slice(2, 8)}@iitr.ac.in`,
+      enrollmentNo: String(Math.floor(10000000 + Math.random() * 89999999)),
+      bhawan: 'Azad',
+      phone: '9876543210',
+      password: 'password123',
+      ...(role && { role }),
+    });
 
   it('defaults to student', async () => {
-    const res = await register();
+    const res = await signUp();
     expect(res.body.user).toMatchObject({ role: 'STUDENT', partnerStatus: null });
   });
 
   it('creates delivery partners as pending approval', async () => {
-    const res = await register('DELIVERY_PARTNER');
+    const res = await signUp('DELIVERY_PARTNER');
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({ role: 'DELIVERY_PARTNER', partnerStatus: 'PENDING' });
   });
 
   it('never allows signing up as admin', async () => {
-    const res = await register('ADMIN');
+    const res = await signUp('ADMIN');
     expect(res.status).toBe(400);
     expect(await prisma.user.count({ where: { role: 'ADMIN', name: 'New Person' } })).toBe(0);
   });

@@ -1,14 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { prisma } from '../src/lib/prisma';
-import { app, resetDb, userData } from './helpers';
+import { app, register, resetDb, userData } from './helpers';
 
 beforeEach(resetDb);
 afterAll(() => prisma.$disconnect());
 
 describe('POST /api/auth/register', () => {
   it('creates a user, sets an httpOnly cookie and never returns the password hash', async () => {
-    const res = await request(app).post('/api/auth/register').send(userData({ email: 'Asha@IITR.ac.in' }));
+    const res = await register(request.agent(app), userData({ email: 'Asha@IITR.ac.in' }));
 
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe('asha@iitr.ac.in');
@@ -45,7 +45,7 @@ describe('POST /api/auth/register', () => {
   });
 
   it('rejects an email that is already registered', async () => {
-    await request(app).post('/api/auth/register').send(userData({ email: 'dup@iitr.ac.in' }));
+    await register(request.agent(app), userData({ email: 'dup@iitr.ac.in' }));
     const res = await request(app).post('/api/auth/register').send(userData({ email: 'dup@iitr.ac.in' }));
 
     expect(res.status).toBe(409);
@@ -55,7 +55,7 @@ describe('POST /api/auth/register', () => {
 
 describe('POST /api/auth/login', () => {
   beforeEach(async () => {
-    await request(app).post('/api/auth/register').send(userData({ email: 'login@iitr.ac.in', password: 'correct-horse' }));
+    await register(request.agent(app), userData({ email: 'login@iitr.ac.in', password: 'correct-horse' }));
   });
 
   it('logs in with the right password and the cookie works for /me', async () => {

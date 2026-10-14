@@ -22,6 +22,14 @@ export interface AuthConfig {
   googleEnabled: boolean;
 }
 
+/** Response from starting a sign-up: a code has been emailed, the account doesn't exist yet. */
+export interface SignupStarted {
+  email: string;
+  expiresInMinutes: number;
+  /** Seconds before "Resend code" may be used. */
+  resendAfterSeconds: number;
+}
+
 export interface Item {
   id: string;
   name: string;

@@ -42,6 +42,14 @@ export const loginSchema = z.object({
 
 export const completeProfileSchema = z.object(profileFields);
 
+const signupCode = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, 'Enter the 6-digit code from the email');
+
+export const verifySignupSchema = z.object({ email: iitrEmail, code: signupCode });
+export const resendSignupCodeSchema = z.object({ email: iitrEmail });
+
 export const forgotPasswordSchema = z.object({ email: anyEmail });
 
 export const resetPasswordSchema = z.object({
@@ -139,6 +147,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type RegisterFormInput = z.input<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
+export type VerifySignupInput = z.infer<typeof verifySignupSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type AddToCartInput = z.infer<typeof addToCartSchema>;

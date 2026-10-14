@@ -152,3 +152,20 @@ model StoreSettings {
   id                Int @id @default(1)
   lowStockThreshold Int @default(5)
 }
+
+// A sign-up waiting for its email verification code. The account is only created once the code is entered.
+model PendingRegistration {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  // The validated form data, with the password already hashed.
+  data        Json
+  // HMAC of the 6-digit code; the code itself is only in the email.
+  codeHash    String
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  resendCount Int      @default(0)
+  lastSentAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([expiresAt])
+}

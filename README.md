@@ -14,6 +14,7 @@ A campus delivery web app for IIT Roorkee. Students sign in with their `@iitr.ac
 ## Features
 
 **Accounts**
+- **Email-verified sign-up:** after filling in the form, the student gets a **6-digit code** by email and the account is created only when the right code is entered. The code expires after 10 minutes, allows 5 tries, and can be resent once a minute (5 times at most). Codes are stored only as a keyed hash. **Login needs no code.**
 - **Sign-up and login:** register with an `@iitr.ac.in` email and password, choosing **"I want to order"** (student) or **"I want to deliver"** (delivery partner, needs admin approval). Admin can never be chosen at sign-up. There's also **sign in with Google** (`@iitr.ac.in` or `@gmail.com`), switched off until Google keys are added.
 - **First Google sign-in:** the student completes their profile (enrollment number, bhawan, phone) before they can order. If the email already has an account, Google is linked to it.
 - **Forgot password:** sends a single-use reset link that expires in 30 minutes. Resetting logs out every other session.
@@ -179,7 +180,7 @@ npm test
 
 Tests use a separate database (`TEST_DATABASE_URL`, `iitr_delivery_test`). It is migrated automatically and wiped between tests, so your dev data is never touched.
 
-They cover 123 cases:
+They cover 136 cases:
 - **Auth:** registration rules, login and logout, blocked users (can't log in, and an existing session is cut off on its next request).
 - **Google sign-in (Google itself is stubbed):**
   - New accounts must complete their profile before ordering.
@@ -197,6 +198,12 @@ They cover 123 cases:
   - Visibility: only confirmed, unassigned orders are listed. An accepted order disappears for everyone else, and a late accept returns 409. Two partners accepting at once: exactly one wins.
   - Delivering: pickup before delivery; a partner can't touch another partner's order; history records the partner.
   - Access: pending and rejected partners, students and admins are all refused.
+- **Sign-up verification codes:**
+  - No account exists until the code is verified, and only hashes are stored.
+  - A wrong code shows the attempts left; after 5 the sign-up is cancelled. Expired codes are rejected.
+  - Resend waits 60 seconds and invalidates the old code; requests are capped at 5.
+  - Already registered or admin sign-ups are refused before any email is sent; a failed send returns a clear error.
+  - Login stays code-free.
 - **Sign-up roles and sales:** sign-up defaults to student; a partner starts as pending; admin is never allowed. Admin approve/reject. Dashboard sales windows exclude cancelled orders.
 - **Permissions:** every admin route returns 401 when logged out and 403 for students and delivery partners. Shopping routes return 403 for admins and delivery partners. A role change applies without logging in again.
 - **Cart and orders:** server-side pricing, stock limits, the free-delivery threshold, price snapshots, rollback when an item is out of stock, and no overselling when two orders race.
@@ -240,7 +247,9 @@ All responses are JSON. Errors are always `{ "error": "message" }` with a matchi
 | Method | Endpoint                     | Notes                                                   |
 | ------ | ---------------------------- | ------------------------------------------------------- |
 | GET    | `/api/auth/config`           | `{ googleEnabled }` (public)                            |
-| POST   | `/api/auth/register`         | name, email, enrollmentNo, bhawan, phone, password (public) |
+| POST   | `/api/auth/register`         | name, email, enrollmentNo, bhawan, phone, password, role. Emails a 6-digit code; no account yet (public) |
+| POST   | `/api/auth/register/verify`  | `{ email, code }`: creates the account and logs in (public) |
+| POST   | `/api/auth/register/resend`  | `{ email }`: new code, at most once a minute (public) |
 | POST   | `/api/auth/login`            | email, password (public)                                |
 | GET    | `/api/auth/google`           | redirects to Google (public)                            |
 | GET    | `/api/auth/google/callback`  | Google redirects here; then redirects to the app (public) |

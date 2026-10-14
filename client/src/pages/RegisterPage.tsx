@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { BHAWANS, ROLE_HOME, registerSchema, type RegisterInput, type SignupRole } from '@iitr/shared';
+import { BHAWANS, ROLE_HOME, registerSchema, type RegisterInput, type SignupRole, type SignupStarted, type User } from '@iitr/shared';
 import { errorMessage } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Field, fieldProps } from '../components/Field';
@@ -10,6 +10,7 @@ import { Spinner } from '../components/Spinner';
 import { StoreIcon, TruckIcon } from '../components/icons';
 import { validate, type FieldErrors } from '../lib/forms';
 import { AuthLayout } from './AuthLayout';
+import { VerifyEmailStep } from './VerifyEmailStep';
 
 type FormValues = Record<Exclude<keyof RegisterInput, 'role'>, string> & { role: SignupRole };
 
@@ -21,8 +22,10 @@ const ROLE_OPTIONS: { value: SignupRole; title: string; description: string; ico
 ];
 
 export function RegisterPage() {
-  const { register } = useAuth();
+  const { startSignup } = useAuth();
   const navigate = useNavigate();
+  // Set once the code has been emailed: the page then shows the code step.
+  const [started, setStarted] = useState<SignupStarted | null>(null);
 
   const [values, setValues] = useState<FormValues>(INITIAL);
   const [errors, setErrors] = useState<FieldErrors<RegisterInput>>({});
@@ -42,19 +45,30 @@ export function RegisterPage() {
 
     setSubmitting(true);
     try {
-      const user = await register(data);
-      toast.success(
-        user.role === 'DELIVERY_PARTNER'
-          ? 'Account created! An admin will review your delivery partner request.'
-          : `Welcome to IITR Delivery, ${user.name.split(' ')[0]}!`,
-        { duration: 5000 },
-      );
-      navigate(ROLE_HOME[user.role], { replace: true });
+      setStarted(await startSignup(data));
     } catch (err) {
       setFormError(errorMessage(err));
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function onVerified(user: User) {
+    toast.success(
+      user.role === 'DELIVERY_PARTNER'
+        ? 'Email verified and account created! An admin will review your delivery partner request.'
+        : `Email verified. Welcome to IITR Delivery, ${user.name.split(' ')[0]}!`,
+      { duration: 5000 },
+    );
+    navigate(ROLE_HOME[user.role], { replace: true });
+  }
+
+  if (started) {
+    return (
+      <AuthLayout title="Verify your email" subtitle="One last step to create your account.">
+        <VerifyEmailStep started={started} onVerified={onVerified} onEditDetails={() => setStarted(null)} />
+      </AuthLayout>
+    );
   }
 
   return (
@@ -153,9 +167,10 @@ export function RegisterPage() {
             onChange={set('password')}
           />
         </Field>
+        <p className="text-xs text-slate-500">We'll email you a 6-digit code to confirm it's your address.</p>
         <button type="submit" className="btn-primary w-full py-3" disabled={submitting}>
           {submitting && <Spinner className="size-4" />}
-          {submitting ? 'Creating account…' : 'Create account'}
+          {submitting ? 'Sending verification code…' : 'Continue'}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
