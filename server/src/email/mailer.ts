@@ -1,5 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { env, isTest } from '../config/env';
+import { env, isProduction, isTest } from '../config/env';
 
 export interface Email {
   to: string;
@@ -27,7 +27,12 @@ function createTransporter(): Promise<Transporter> {
     );
   }
 
-  // No SMTP configured: use a throwaway Ethereal inbox. Mail is never delivered; each message gets a preview URL.
+  // No SMTP in production: don't pretend to send. Emails are skipped (and logged) until SMTP_* is configured.
+  if (isProduction) {
+    return Promise.resolve(nodemailer.createTransport({ jsonTransport: true }));
+  }
+
+  // No SMTP configured in development: use a throwaway Ethereal inbox. Mail is never delivered; each message gets a preview URL.
   return nodemailer.createTestAccount().then((account) => {
     console.log(`[mail] No SMTP_HOST set: using Ethereal test inbox ${account.user} (preview links are logged per email)`);
     return nodemailer.createTransport({
@@ -50,6 +55,10 @@ export const mailer = {
 
     if (isTest) {
       outbox.push(email);
+      return;
+    }
+    if (isProduction && !env.SMTP_HOST) {
+      console.log(`[mail] SMTP not configured, skipped "${email.subject}" → ${email.to}`);
       return;
     }
     const preview = nodemailer.getTestMessageUrl(info);

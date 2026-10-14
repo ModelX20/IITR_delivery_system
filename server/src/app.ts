@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { env } from './config/env';
+import { env, isVercel } from './config/env';
 import { requireApprovedPartner, requireAuth, requireCompleteProfile, requireRole } from './middleware/auth';
 import { errorHandler, notFound } from './middleware/error';
 import { authRouter } from './routes/auth';
@@ -14,6 +14,9 @@ import { deliveryRouter } from './routes/delivery';
 
 export function createApp() {
   const app = express();
+
+  // Behind Vercel's proxy: use the real client IP (from X-Forwarded-For) for rate limiting.
+  if (isVercel) app.set('trust proxy', 1);
 
   app.use(helmet());
   app.use(cors({ origin: env.CLIENT_URL, credentials: true }));

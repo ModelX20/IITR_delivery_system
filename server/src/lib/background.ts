@@ -1,5 +1,7 @@
 // Fire-and-forget work (e.g. sending email) that must never fail or slow down an API response.
 // Errors are logged, not thrown. Tasks live only in this process: there is no retry or persistence.
+import { waitUntil } from '@vercel/functions';
+import { isVercel } from '../config/env';
 
 const pending = new Set<Promise<void>>();
 
@@ -12,6 +14,8 @@ export function runInBackground(label: string, task: () => Promise<unknown>): vo
     )
     .finally(() => pending.delete(promise));
   pending.add(promise);
+  // On Vercel the function is frozen once the response is sent; this keeps it alive until the task finishes.
+  if (isVercel) waitUntil(promise);
 }
 
 /** Waits until all background work has finished (used by tests, and on shutdown). */

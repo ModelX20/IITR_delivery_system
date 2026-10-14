@@ -7,3 +7,6 @@ dist/
 
 # Embedded Postgres data directory
 server/.pgdata/
+
+# Vercel build output and local project link
+.vercel/

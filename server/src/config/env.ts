@@ -8,6 +8,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
+  // Public URL of the website (used in email links and CORS). On Vercel it defaults to the production domain.
   CLIENT_URL: z.url('CLIENT_URL must be a valid URL'),
 
   // Google sign-in is enabled only when both the client ID and secret are set.
@@ -24,11 +25,23 @@ const envSchema = z.object({
   MAIL_FROM: z.string().default('IITR Delivery <no-reply@iitr-delivery.local>'),
 });
 
-const parsed = envSchema.safeParse(process.env);
+/** True when running as a Vercel Function (Vercel sets VERCEL=1). */
+export const isVercel = Boolean(process.env.VERCEL);
+
+// Vercel tells us the production domain, so CLIENT_URL doesn't have to be set by hand there.
+const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+const parsed = envSchema.safeParse({
+  ...process.env,
+  NODE_ENV: process.env.NODE_ENV ?? (isVercel ? 'production' : undefined),
+  CLIENT_URL: process.env.CLIENT_URL || (vercelUrl ? `https://${vercelUrl}` : undefined),
+});
 
 if (!parsed.success) {
   const problems = parsed.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
-  console.error(`Invalid environment configuration (see server/.env.example):\n${problems}`);
+  const message = `Invalid environment configuration (see server/.env.example):\n${problems}`;
+  // A serverless function can't exit the process; failing loudly on first request is the equivalent.
+  if (isVercel) throw new Error(message);
+  console.error(message);
   process.exit(1);
 }
 

@@ -301,11 +301,16 @@ Cart and order routes also return `403` until a Google sign-up has completed the
 - **Placing an order:** one database transaction that lowers stock, creates the order with each item's price at that moment plus its first history entry, then clears the cart. If any item is short of stock, the whole thing rolls back.
 - **Low stock:** an item counts as low stock when it is on sale and `stock ≤ lowStockThreshold` (default 5, editable by admins).
 
+## Deploying
+
+The whole app (website, API and database) deploys to **Vercel** as one project, with a free Neon Postgres database. Step-by-step instructions, the environment variables and how to seed production safely are in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 ## Useful commands
 
 ```bash
 npm run typecheck                       # type-check client and server
 npm run build                           # production build of the client
+npm run vercel-build                    # full Vercel build into .vercel/output (see DEPLOYMENT.md)
 cd server && npx prisma studio          # browse the database in a GUI
 cd server && npx prisma migrate dev     # create a migration after editing schema.prisma
 ```
