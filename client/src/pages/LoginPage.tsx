@@ -19,7 +19,6 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_state: 'Your Google sign-in session expired or was invalid. Please try again.',
   google_failed: "We couldn't complete Google sign-in. Please try again.",
   google_unverified: 'Your Google account email is not verified. Verify it with Google, then try again.',
-  google_domain: 'Only @iitr.ac.in and @gmail.com Google accounts can sign in.',
   google_mismatch: 'This email is already linked to a different Google account. Sign in with that account or your password.',
   blocked: 'Your account has been blocked. Please contact the admin.',
 };
@@ -61,7 +60,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Log in" subtitle="Use your IITR email to continue.">
+    <AuthLayout title="Log in" subtitle="Welcome back! Log in with your email and password.">
       {formError && (
         <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
           {formError}
@@ -70,7 +69,6 @@ export function LoginPage() {
       {config?.googleEnabled && (
         <>
           <GoogleButton />
-          <p className="mt-2 text-center text-xs text-slate-500">@iitr.ac.in and @gmail.com accounts</p>
           <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
             <span className="h-px flex-1 bg-slate-200" />
             or use your password
@@ -84,7 +82,7 @@ export function LoginPage() {
             {...fieldProps('email', errors.email)}
             type="email"
             autoComplete="email"
-            placeholder="yourname@iitr.ac.in"
+            placeholder="you@example.com"
             className="input"
             value={values.email}
             onChange={set('email')}

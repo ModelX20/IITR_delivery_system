@@ -1,6 +1,6 @@
 # IITR Delivery
 
-A campus delivery web app for IIT Roorkee. Students sign in with their `@iitr.ac.in` email (password or Google), browse snacks, beverages, stationery, essentials and food, and place orders delivered to their bhawan room. Admins manage items, orders and users from an admin panel. All orders are **Cash on Delivery**.
+A campus delivery web app for IIT Roorkee. Students sign up with any email address (verified with a code), browse snacks, beverages, stationery, essentials and food, and place orders delivered to their bhawan room. Admins manage items, orders and users from an admin panel. All orders are **Cash on Delivery**.
 
 | Part       | Tech                                                      |
 | ---------- | --------------------------------------------------------- |
@@ -15,7 +15,7 @@ A campus delivery web app for IIT Roorkee. Students sign in with their `@iitr.ac
 
 **Accounts**
 - **Email-verified sign-up:** after filling in the form, the student gets a **6-digit code** by email and the account is created only when the right code is entered. The code expires after 10 minutes, allows 5 tries, and can be resent once a minute (5 times at most). Codes are stored only as a keyed hash. **Login needs no code.**
-- **Sign-up and login:** register with an `@iitr.ac.in` email and password, choosing **"I want to order"** (student) or **"I want to deliver"** (delivery partner, needs admin approval). Admin can never be chosen at sign-up. There's also **sign in with Google** (`@iitr.ac.in` or `@gmail.com`), switched off until Google keys are added.
+- **Sign-up and login:** register with **any email address** and a password, choosing **"I want to order"** (student) or **"I want to deliver"** (delivery partner, needs admin approval). Admin can never be chosen at sign-up. There's also **sign in with Google** (any account with a verified email), switched off until Google keys are added.
 - **First Google sign-in:** the student completes their profile (enrollment number, bhawan, phone) before they can order. If the email already has an account, Google is linked to it.
 - **Forgot password:** sends a single-use reset link that expires in 30 minutes. Resetting logs out every other session.
 - **Emails:** welcome, order placed, every status change, cancellation, and password reset. They're sent in the background, so a mail failure never fails a request.
@@ -185,7 +185,7 @@ They cover 136 cases:
 - **Google sign-in (Google itself is stubbed):**
   - New accounts must complete their profile before ordering.
   - Linking to an existing account, and a Gmail account being accepted.
-  - Rejections: other or lookalike domains, unverified email, blocked users, a mismatched `state` (CSRF), a user cancelling, and Google errors.
+  - Any verified email domain is accepted. Rejections: unverified email, blocked users, a mismatched `state` (CSRF), a user cancelling, and Google errors.
   - The button is hidden when Google isn't configured.
 - **Password reset:**
   - The same response whether or not the email exists.
@@ -332,10 +332,9 @@ cd server && npx prisma migrate dev     # create a migration after editing schem
 - **Google sign-in is switched off** until `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; that's postponed to the end.
 - **Payments are Cash on Delivery only.** There is no payment gateway, and none is planned until a later phase.
 - **Item pictures are illustrated tiles** (an icon chosen from the item's name, on a colour for its category) unless an admin adds a photo URL. If a photo fails to load, the tile is shown instead. Icons use the device's emoji font, so they look slightly different on Windows, Android and iOS.
-- **Password sign-up doesn't verify the email address.** Anyone who knows an `@iitr.ac.in` address can register with it. Google sign-in does verify (`email_verified`).
 - **Emails are sent from memory, without a queue or retries.** A failed email is logged and dropped; anything still pending is lost if the server crashes (a normal shutdown waits for it).
 - **Login error messages say whether an email is registered** ("No account found" vs "Incorrect password"), as the original spec asked. The forgot-password form does not reveal this.
-- **Only emails ending exactly in `@iitr.ac.in` are accepted.** Department subdomains such as `@cs.iitr.ac.in` are rejected. Change `IITR_EMAIL_DOMAIN` in `shared/` if those need to work.
+- **Any email address can sign up**, not just `@iitr.ac.in`. The emailed code proves the person owns the address, but nothing checks that they are actually an IIT Roorkee student. Admins can block accounts that shouldn't be there.
 - **Every API request does one small database lookup** for the user's role and blocked status. That's how changes apply instantly, at the cost of one indexed query per request.
 - **The rate limiter is in memory** (20 login/register attempts per 15 minutes per IP). It resets on restart and isn't shared across server instances.
 - **History for orders placed before the roles migration** was backfilled: a *Placed* entry plus the current status if different. Both are timestamped at order creation and attributed to the order's owner, because the real actor wasn't recorded.

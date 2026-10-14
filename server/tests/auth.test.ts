@@ -22,19 +22,23 @@ describe('POST /api/auth/register', () => {
     expect(stored?.passwordHash).toMatch(/^\$2[aby]\$/);
   });
 
-  it('rejects an email that is not @iitr.ac.in', async () => {
-    const res = await request(app).post('/api/auth/register').send(userData({ email: 'someone@gmail.com' }));
-
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/iitr/i);
-    expect(await prisma.user.count()).toBe(0);
+  it('accepts any email domain (ownership is proven by the emailed code)', async () => {
+    for (const email of ['someone@gmail.com', 'student@yahoo.co.in', 'Prof@University.EDU']) {
+      const res = await register(request.agent(app), userData({ email }));
+      expect(res.status, email).toBe(201);
+      expect(res.body.user.email).toBe(email.toLowerCase());
+    }
+    // ...and those accounts log in normally, without a code.
+    const login = await request(app).post('/api/auth/login').send({ email: 'someone@gmail.com', password: 'password123' });
+    expect(login.status).toBe(200);
   });
 
-  it('rejects lookalike domains', async () => {
-    for (const email of ['a@iitr.ac.in.evil.com', 'a@notiitr.ac.in']) {
+  it('rejects malformed email addresses', async () => {
+    for (const email of ['not-an-email', 'a@', '@gmail.com', 'two words@gmail.com', '']) {
       const res = await request(app).post('/api/auth/register').send(userData({ email }));
       expect(res.status, email).toBe(400);
     }
+    expect(await prisma.pendingRegistration.count()).toBe(0);
   });
 
   it('rejects passwords shorter than 8 characters', async () => {

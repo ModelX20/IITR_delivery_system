@@ -55,7 +55,7 @@ export function ForgotPasswordPage() {
             {...fieldProps('email', error)}
             type="email"
             autoComplete="email"
-            placeholder="yourname@iitr.ac.in"
+            placeholder="you@example.com"
             className="input"
             value={email}
             onChange={(e) => {

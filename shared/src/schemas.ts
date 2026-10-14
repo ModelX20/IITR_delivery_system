@@ -1,17 +1,8 @@
 import { z } from 'zod';
-import { BHAWANS, CATEGORIES, IITR_EMAIL_DOMAIN, ORDER_STATUSES, PARTNER_STATUSES, ROLES, SIGNUP_ROLES, isAllowedGoogleEmail } from './config';
+import { BHAWANS, CATEGORIES, ORDER_STATUSES, PARTNER_STATUSES, ROLES, SIGNUP_ROLES } from './config';
 
-const anyEmail = z.string().trim().toLowerCase().min(1, 'Email is required').pipe(z.email('Enter a valid email address'));
-
-/** New password-based accounts must use an IITR email. */
-const iitrEmail = anyEmail.refine((value) => value.endsWith(IITR_EMAIL_DOMAIN), {
-  message: `Please use your IITR email (ending in ${IITR_EMAIL_DOMAIN})`,
-});
-
-/** Existing accounts may also be Gmail (created via Google sign-in). */
-const accountEmail = anyEmail.refine(isAllowedGoogleEmail, {
-  message: `Use your IITR email (or the Gmail account you signed in with Google)`,
-});
+/** Any address is accepted: sign-up proves ownership with an emailed code. */
+const email = z.string().trim().toLowerCase().min(1, 'Email is required').pipe(z.email('Enter a valid email address'));
 
 const password = z.string().min(8, 'Password must be at least 8 characters').max(72, 'Password must be at most 72 characters');
 
@@ -29,14 +20,14 @@ const profileFields = {
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, 'Full name must be at least 2 characters').max(100),
-  email: iitrEmail,
+  email,
   ...profileFields,
   password,
   role: z.enum(SIGNUP_ROLES, { message: 'Choose whether you want to order or deliver' }).default('STUDENT'),
 });
 
 export const loginSchema = z.object({
-  email: accountEmail,
+  email,
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -47,10 +38,10 @@ const signupCode = z
   .trim()
   .regex(/^\d{6}$/, 'Enter the 6-digit code from the email');
 
-export const verifySignupSchema = z.object({ email: iitrEmail, code: signupCode });
-export const resendSignupCodeSchema = z.object({ email: iitrEmail });
+export const verifySignupSchema = z.object({ email, code: signupCode });
+export const resendSignupCodeSchema = z.object({ email });
 
-export const forgotPasswordSchema = z.object({ email: anyEmail });
+export const forgotPasswordSchema = z.object({ email });
 
 export const resetPasswordSchema = z.object({
   token: z.string().trim().min(20, 'This reset link is invalid').max(200, 'This reset link is invalid'),

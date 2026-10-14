@@ -6,7 +6,6 @@ import {
   ROLE_HOME,
   completeProfileSchema,
   forgotPasswordSchema,
-  isAllowedGoogleEmail,
   loginSchema,
   registerSchema,
   resendSignupCodeSchema,
@@ -170,7 +169,7 @@ authRouter.post('/reset-password', authRateLimit, async (req, res) => {
 // ---------- Google sign-in ----------
 
 /** Error codes the login page knows how to explain. */
-type GoogleError = 'google_cancelled' | 'google_state' | 'google_failed' | 'google_unverified' | 'google_domain' | 'google_mismatch' | 'blocked';
+type GoogleError = 'google_cancelled' | 'google_state' | 'google_failed' | 'google_unverified' | 'google_mismatch' | 'blocked';
 
 function loginRedirect(res: Response, error: GoogleError) {
   res.redirect(`${env.CLIENT_URL}/login?error=${error}`);
@@ -205,7 +204,6 @@ authRouter.get('/google/callback', authRateLimit, async (req, res) => {
     return loginRedirect(res, 'google_failed');
   }
   if (!profile.emailVerified) return loginRedirect(res, 'google_unverified');
-  if (!isAllowedGoogleEmail(profile.email)) return loginRedirect(res, 'google_domain');
 
   let user: User | null = await prisma.user.findUnique({ where: { googleId: profile.sub } });
   if (!user) {

@@ -72,7 +72,7 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthLayout title="Create your account" subtitle="Only @iitr.ac.in email addresses can register.">
+    <AuthLayout title="Create your account" subtitle="Sign up with any email address. We'll send you a code to verify it.">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {formError && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
@@ -112,12 +112,12 @@ export function RegisterPage() {
         <Field id="name" label="Full name" error={errors.name}>
           <input {...fieldProps('name', errors.name)} autoComplete="name" className="input" value={values.name} onChange={set('name')} />
         </Field>
-        <Field id="email" label="IITR email" error={errors.email}>
+        <Field id="email" label="Email" error={errors.email}>
           <input
             {...fieldProps('email', errors.email)}
             type="email"
             autoComplete="email"
-            placeholder="yourname@iitr.ac.in"
+            placeholder="you@example.com"
             className="input"
             value={values.email}
             onChange={set('email')}

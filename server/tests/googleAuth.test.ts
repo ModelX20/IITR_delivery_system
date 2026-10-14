@@ -75,19 +75,15 @@ describe('Google sign-in', () => {
     expect(welcome[0].to).toBe('asha@iitr.ac.in');
   });
 
-  it('accepts Gmail accounts', async () => {
-    const { location } = await googleLogin(profile({ email: 'someone@gmail.com', sub: 'g-gmail' }));
+  it.each(['someone@gmail.com', 'someone@yahoo.co.in', 'prof@university.edu'])('accepts any verified email domain (%s)', async (email) => {
+    const { location } = await googleLogin(profile({ email, sub: `g-${email}` }));
     expect(location).toBe(`${CLIENT}/complete-profile`);
   });
 
-  it.each([
-    ['other domains', profile({ email: 'someone@yahoo.com' }), 'google_domain'],
-    ['lookalike domains', profile({ email: 'x@gmail.com.evil.io' }), 'google_domain'],
-    ['unverified emails', profile({ emailVerified: false }), 'google_unverified'],
-  ])('rejects %s without creating an account', async (_label, googleProfile, error) => {
-    const { location, callback } = await googleLogin(googleProfile);
+  it('rejects unverified Google emails without creating an account', async () => {
+    const { location, callback } = await googleLogin(profile({ emailVerified: false }));
 
-    expect(location).toBe(`${CLIENT}/login?error=${error}`);
+    expect(location).toBe(`${CLIENT}/login?error=google_unverified`);
     expect(hasSessionCookie(callback)).toBe(false);
     expect(await prisma.user.count()).toBe(0);
   });

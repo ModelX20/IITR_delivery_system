@@ -46,16 +46,6 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 /** Students may cancel their own order only while it is in one of these statuses. */
 export const STUDENT_CANCELLABLE_STATUSES: readonly OrderStatus[] = ['PLACED'];
 
-export const IITR_EMAIL_DOMAIN = '@iitr.ac.in';
-
-/** Google accounts from these domains may sign in (password sign-up stays IITR-only). */
-export const GOOGLE_ALLOWED_DOMAINS = [IITR_EMAIL_DOMAIN, '@gmail.com'] as const;
-
-export function isAllowedGoogleEmail(email: string): boolean {
-  const lower = email.toLowerCase();
-  return GOOGLE_ALLOWED_DOMAINS.some((domain) => lower.endsWith(domain));
-}
-
 export const PASSWORD_RESET_TTL_MINUTES = 30;
 
 /** Email verification codes sent during sign-up. */
