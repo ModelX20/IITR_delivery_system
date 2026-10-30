@@ -9,7 +9,7 @@ export function Spinner({ className = 'size-5' }: { className?: string }) {
 
 export function FullPageSpinner() {
   return (
-    <div className="flex min-h-[60dvh] items-center justify-center text-brand-700" role="status">
+    <div className="flex min-h-[60dvh] items-center justify-center text-brand-500" role="status">
       <Spinner className="size-8" />
       <span className="sr-only">Loading…</span>
     </div>

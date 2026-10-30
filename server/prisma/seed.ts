@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient, type OrderStatus, type PartnerStatus, type Role } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { ITEM_PHOTOS } from './itemPhotos';
 
 const prisma = new PrismaClient();
 
@@ -167,8 +168,8 @@ async function seedOrders(userIds: Map<string, string>, adminId: string, partner
 
 async function main() {
   for (const item of items) {
-    // No imageUrl: the app shows an illustrated tile for each item. Admins can add a photo URL later.
-    const data = { ...item, imageUrl: '', isActive: true };
+    // Items without a photo show an illustrated tile instead. Admins can change photos later.
+    const data = { ...item, imageUrl: ITEM_PHOTOS[item.id] ?? '', isActive: true };
     await prisma.item.upsert({ where: { id: item.id }, create: data, update: data });
   }
   console.log(`Seeded ${items.length} items`);

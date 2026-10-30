@@ -63,7 +63,7 @@ export function ResetPasswordPage() {
     <AuthLayout title="Choose a new password" subtitle="This will log you out on every device.">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {formError && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
             {formError}{' '}
             <Link to="/forgot-password" className="font-semibold underline">
               Request a new link

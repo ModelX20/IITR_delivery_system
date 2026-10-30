@@ -9,6 +9,11 @@ export function formatPrice(value: string | number): string {
   return currency.format(Number(value));
 }
 
+/** Like formatPrice, but drops ".00" from whole-rupee amounts: "₹30" instead of "₹30.00". */
+export function formatPriceShort(value: string | number): string {
+  return formatPrice(value).replace(/\.00$/, '');
+}
+
 const dateTime = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
   month: 'short',

@@ -1,61 +1,50 @@
 import type { ReactNode } from 'react';
-import { Logo, LogoMark } from '../components/Logo';
+import { Logo } from '../components/Logo';
+import { PHOTOS, unsplash } from '../lib/photos';
 
 const HIGHLIGHTS = [
-  'Snacks, stationery and essentials from campus shops',
-  'Delivered to your bhawan room',
-  'Free delivery on orders above ₹300',
+  { emoji: '⚡', text: 'Quick delivery anywhere on campus' },
+  { emoji: '🏠', text: 'Straight to your bhawan room' },
+  { emoji: '🎉', text: 'Free delivery on orders above ₹300' },
 ];
 
-/** Split layout for login/register: branded panel on large screens, centred card everywhere. */
+/** Login/register: a full-bleed food photo with the form floating on top (a bottom sheet on phones). */
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh">
-      <aside className="relative hidden w-[44%] overflow-hidden bg-brand-900 p-12 text-white lg:flex lg:flex-col">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-            backgroundSize: '22px 22px',
-          }}
-        />
-        <div className="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-gold-400/10 blur-3xl" />
+    <div className="relative flex min-h-dvh flex-col bg-ink lg:flex-row lg:items-center lg:justify-center lg:gap-16 lg:px-12 lg:py-10">
+      <img src={unsplash(PHOTOS.auth, 1920, 1280)} alt="" className="absolute inset-0 size-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/80 lg:bg-gradient-to-r lg:from-black/85 lg:via-black/60 lg:to-black/30" aria-hidden="true" />
 
-        <div className="relative">
-          <Logo light />
-        </div>
-        <div className="relative mt-auto mb-auto">
-          <p className="text-sm font-semibold tracking-widest text-gold-400 uppercase">IIT Roorkee</p>
-          <h2 className="mt-3 text-4xl leading-tight font-bold">
-            Campus essentials,
-            <br />
-            delivered to your door.
-          </h2>
-          <ul className="mt-8 space-y-3 text-brand-100">
-            {HIGHLIGHTS.map((h) => (
-              <li key={h} className="flex items-center gap-3">
-                <span className="flex size-6 items-center justify-center rounded-full bg-gold-400/15 text-gold-400">✓</span>
-                {h}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <p className="relative text-xs text-brand-300">A student project for the IIT Roorkee community.</p>
+      {/* Brand pitch */}
+      <aside className="relative px-6 pt-8 pb-16 text-white lg:max-w-xl lg:flex-1 lg:p-0">
+        <span className="inline-flex rounded-2xl bg-white px-3 py-2 shadow-lg">
+          <Logo />
+        </span>
+        <p className="mt-10 text-xs font-extrabold tracking-[0.2em] text-brand-300 uppercase lg:mt-16">IIT Roorkee · Campus delivery</p>
+        <h2 className="mt-2 text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-5xl xl:text-6xl">
+          Hungry at 2&nbsp;AM?
+          <br />
+          <span className="text-white/85">We deliver to your bhawan.</span>
+        </h2>
+        <ul className="mt-8 hidden space-y-3 lg:block">
+          {HIGHLIGHTS.map((h) => (
+            <li key={h.text} className="flex items-center gap-3 font-semibold text-white/90">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-white/15 text-lg backdrop-blur" aria-hidden="true">
+                {h.emoji}
+              </span>
+              {h.text}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-12 hidden text-xs text-white/50 lg:block">A student project for the IIT Roorkee community.</p>
       </aside>
 
-      <main className="flex flex-1 items-center justify-center bg-slate-50 px-4 py-10 sm:px-6">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex flex-col items-center text-center lg:hidden">
-            <LogoMark className="size-12" />
-            <p className="mt-3 text-2xl font-bold tracking-tight text-brand-900">
-              IITR <span className="text-gold-500">Delivery</span>
-            </p>
-          </div>
-          <div className="card p-6 sm:p-8">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-            <div className="mt-6">{children}</div>
-          </div>
+      {/* Form: floating card on desktop, bottom sheet on phones */}
+      <main className="relative -mt-8 flex flex-1 justify-center rounded-t-[2rem] bg-white px-5 pt-8 pb-10 sm:px-8 lg:mt-0 lg:w-full lg:max-w-md lg:flex-none lg:rounded-3xl lg:p-9 lg:shadow-2xl">
+        <div className="w-full max-w-md animate-slide-up">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+          <div className="mt-7">{children}</div>
         </div>
       </main>
     </div>

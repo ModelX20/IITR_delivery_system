@@ -103,6 +103,19 @@ This creates:
 
 If you don't want demo students or orders on the real site, block or ignore them from the admin **Users** page.
 
+### Adding item photos to an existing database
+
+If your database was seeded before item photos were added, give the items their photos without re-seeding (re-seeding would reset prices, stock and the demo passwords). This only fills in items that have no photo yet, and changes nothing else:
+
+```powershell
+cd server
+$env:DATABASE_URL = "<paste DATABASE_URL_UNPOOLED here>"
+npm run photos
+Remove-Item Env:DATABASE_URL
+```
+
+You can also set or change any item's photo by hand under **Admin → Items → Edit → Image URL**.
+
 ## Step 6: Check it works
 
 Open your site URL and check:

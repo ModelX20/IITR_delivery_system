@@ -120,7 +120,7 @@ export function ItemFormModal({
               />
             </Field>
           </div>
-          <div className="mt-6 size-16 shrink-0 overflow-hidden rounded-lg" aria-label="Preview">
+          <div className="mt-6 size-16 shrink-0 overflow-hidden rounded-xl" aria-label="Preview">
             <ItemImage
               name={values.name || 'New item'}
               category={values.category}

@@ -14,7 +14,7 @@ import { PageHeader, useAdmin } from './AdminLayout';
 function StatCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
   return (
     <div className="card flex items-center gap-4 p-4">
-      <div className="hidden size-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 sm:flex">{icon}</div>
+      <div className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 sm:flex">{icon}</div>
       <div className="min-w-0">
         <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">{label}</p>
         <p className="text-lg font-bold break-words text-slate-900 sm:text-xl">{value}</p>
@@ -105,7 +105,7 @@ export function AdminDashboardPage() {
             <Link
               key={s}
               to={`/admin/orders?status=${s}`}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm transition hover:border-brand-300 hover:bg-brand-50"
+              className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm transition hover:border-brand-300 hover:bg-brand-50"
             >
               <span className="font-bold text-slate-900 tabular-nums">{data.ordersByStatus[s]}</span>
               <span className="text-slate-600">{STATUS_LABEL[s]}</span>
@@ -170,7 +170,7 @@ export function AdminDashboardPage() {
             <ul className="divide-y divide-slate-100">
               {data.recentOrders.map((o) => (
                 <li key={o.id}>
-                  <Link to={`/admin/orders/${o.id}`} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 hover:bg-slate-50">
+                  <Link to={`/admin/orders/${o.id}`} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900">
                         {shortOrderId(o.id)} · {o.customer.name}

@@ -36,11 +36,11 @@ export function Modal({
         onClose();
       }}
       onClick={(e) => e.target === ref.current && onClose()}
-      className={`m-auto w-[calc(100%-2rem)] ${width} rounded-xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm`}
+      className={`m-auto w-[calc(100%-2rem)] ${width} rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm`}
     >
       {open && (
         <div className="max-h-[85dvh] overflow-y-auto p-5 sm:p-6">
-          <h2 id={titleId} className="mb-4 text-lg font-semibold text-slate-900">
+          <h2 id={titleId} className="mb-4 text-lg font-extrabold text-ink">
             {title}
           </h2>
           {children}

@@ -21,10 +21,22 @@ export function ItemImage({
   dimmed?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const fade = dimmed ? 'opacity-50 grayscale' : '';
 
   if (imageUrl && !failed) {
-    return <img src={imageUrl} alt={name} loading="lazy" onError={() => setFailed(true)} className={`size-full object-cover ${fade}`} />;
+    return (
+      <div className={`size-full bg-slate-100 ${loaded ? '' : 'animate-pulse'}`}>
+        <img
+          src={imageUrl}
+          alt={name}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`size-full object-cover transition-opacity duration-500 ${loaded ? (dimmed ? 'opacity-50 grayscale' : 'opacity-100') : 'opacity-0'}`}
+        />
+      </div>
+    );
   }
 
   return (

@@ -12,7 +12,7 @@ interface CartContextValue {
   /** Item ids with a request in flight, to disable their buttons. */
   pending: Set<string>;
   quantityOf: (itemId: string) => number;
-  add: (itemId: string, name: string) => Promise<void>;
+  add: (itemId: string) => Promise<void>;
   setQuantity: (itemId: string, quantity: number) => Promise<void>;
   remove: (itemId: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -67,9 +67,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const add = useCallback(
-    async (itemId: string, name: string) => {
+    // No toast: the ADD button turns into a stepper and the "View cart" bar appears instead.
+    async (itemId: string) => {
       await mutate(itemId, () => api<CartSummary>('/cart', { method: 'POST', body: { itemId, quantity: 1 } }));
-      toast.success(`${name} added to cart`);
     },
     [mutate],
   );

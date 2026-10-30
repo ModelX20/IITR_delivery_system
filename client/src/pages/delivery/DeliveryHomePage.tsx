@@ -38,7 +38,7 @@ function AwaitingApproval() {
 
   return (
     <EmptyState
-      icon={<TruckIcon />}
+      emoji={rejected ? '🙁' : '⏳'}
       title={rejected ? 'Application not approved' : 'Waiting for approval'}
       message={
         rejected
@@ -251,7 +251,7 @@ function OrderCard({ order, children }: { order: DeliveryOrder; children: ReactN
       </div>
 
       {order.customer && (
-        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-slate-50 px-3 py-2 text-sm">
+        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-slate-50 px-3 py-2 text-sm">
           <span className="font-medium text-slate-900">{order.customer.name}</span>
           {order.customer.phone && (
             <a href={`tel:${order.customer.phone}`} className="flex items-center gap-1.5 text-brand-700 hover:underline">

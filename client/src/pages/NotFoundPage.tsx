@@ -1,16 +1,15 @@
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
-import { SearchIcon } from '../components/icons';
 
 export function NotFoundPage() {
   return (
     <EmptyState
-      icon={<SearchIcon />}
+      emoji="🧭"
       title="Page not found"
-      message="The page you're looking for doesn't exist."
+      message="Looks like this page took a wrong turn. Let's get you back."
       action={
         <Link to="/" className="btn-primary">
-          Go to shop
+          Go home
         </Link>
       }
     />

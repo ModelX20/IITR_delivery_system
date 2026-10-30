@@ -49,12 +49,12 @@ export function CompleteProfilePage() {
 
   return (
     <AuthLayout title={`Welcome, ${user.name.split(' ')[0]}!`} subtitle="A few details so we can deliver to you.">
-      <p className="mb-5 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+      <p className="mb-5 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
         Signed in as <span className="font-medium text-slate-900">{user.email}</span>
       </p>
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {formError && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
             {formError}
           </div>
         )}

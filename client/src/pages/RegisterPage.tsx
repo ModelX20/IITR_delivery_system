@@ -75,19 +75,19 @@ export function RegisterPage() {
     <AuthLayout title="Create your account" subtitle="Sign up with any email address. We'll send you a code to verify it.">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {formError && (
-          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
             {formError}
           </div>
         )}
         <fieldset>
-          <legend className="mb-1.5 text-sm font-medium text-slate-700">I'm signing up to…</legend>
+          <legend className="mb-1.5 text-sm font-semibold text-slate-700">I'm signing up to…</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             {ROLE_OPTIONS.map((option) => {
               const selected = values.role === option.value;
               return (
                 <label
                   key={option.value}
-                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition ${
+                  className={`flex cursor-pointer gap-3 rounded-xl border p-3 transition ${
                     selected ? 'border-brand-500 bg-brand-50 ring-2 ring-brand-500/20' : 'border-slate-300 hover:bg-slate-50'
                   }`}
                 >

@@ -77,7 +77,7 @@ export function AdminOrderDetailPage() {
         </div>
 
         {nextStatuses.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2 rounded-lg bg-brand-50/60 p-3">
+          <div className="mt-5 flex flex-wrap gap-2 rounded-xl bg-brand-50/60 p-3">
             <span className="mr-auto self-center text-sm font-medium text-brand-900">Update status:</span>
             {nextStatuses.map((status) =>
               status === 'CANCELLED' ? (
@@ -95,7 +95,7 @@ export function AdminOrderDetailPage() {
         )}
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg bg-slate-50 p-4 text-sm">
+          <div className="rounded-xl bg-slate-50 p-4 text-sm">
             <p className="font-medium text-slate-900">{order.customer.name}</p>
             {order.customer.enrollmentNo && <p className="text-slate-500">Enrollment {order.customer.enrollmentNo}</p>}
             <a href={`mailto:${order.customer.email}`} className="mt-2 flex items-center gap-2 break-all text-brand-700 hover:underline">
@@ -109,7 +109,7 @@ export function AdminOrderDetailPage() {
               </a>
             )}
           </div>
-          <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4 text-sm">
+          <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-sm">
             <MapPinIcon className="mt-0.5 size-5 shrink-0 text-brand-600" />
             <div>
               <p className="font-medium text-slate-900">
@@ -130,7 +130,7 @@ export function AdminOrderDetailPage() {
               </p>
             </div>
           </div>
-          <div className="rounded-lg border border-slate-100 p-4">
+          <div className="rounded-xl border border-slate-100 p-4">
             <p className="mb-3 text-sm font-medium text-slate-900">History</p>
             <StatusTimeline history={order.statusHistory} showActor />
           </div>

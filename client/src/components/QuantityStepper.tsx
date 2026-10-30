@@ -1,5 +1,6 @@
-import { MinusIcon, PlusIcon, TrashIcon } from './icons';
+import { MinusIcon, PlusIcon } from './icons';
 
+/** Green "− 2 +" stepper, shown in place of the ADD button once an item is in the cart. */
 export function QuantityStepper({
   quantity,
   max,
@@ -16,12 +17,12 @@ export function QuantityStepper({
   onRemove: () => void;
   size?: 'sm' | 'md';
 }) {
-  const btn = `flex items-center justify-center text-brand-700 transition hover:bg-brand-50 disabled:opacity-40 disabled:hover:bg-transparent ${
-    size === 'sm' ? 'size-8' : 'size-10'
-  } [&_svg]:size-4`;
+  const btn = `flex items-center justify-center text-white transition hover:bg-black/10 disabled:opacity-40 disabled:hover:bg-transparent ${
+    size === 'sm' ? 'h-8 w-8' : 'h-10 w-10'
+  } [&_svg]:size-4 [&_svg]:stroke-[3]`;
 
   return (
-    <div className="inline-flex items-center overflow-hidden rounded-lg border border-brand-200 bg-white">
+    <div className={`inline-flex items-center overflow-hidden rounded-lg bg-brand-600 shadow-sm shadow-brand-600/30 ${busy ? 'opacity-80' : ''}`}>
       <button
         type="button"
         className={btn}
@@ -29,9 +30,9 @@ export function QuantityStepper({
         onClick={() => (quantity <= 1 ? onRemove() : onChange(quantity - 1))}
         aria-label={quantity <= 1 ? 'Remove from cart' : 'Decrease quantity'}
       >
-        {quantity <= 1 ? <TrashIcon /> : <MinusIcon />}
+        <MinusIcon />
       </button>
-      <span className="min-w-8 text-center text-sm font-semibold tabular-nums text-slate-900" aria-live="polite">
+      <span className="min-w-6 text-center text-sm font-extrabold text-white tabular-nums" aria-live="polite">
         {quantity}
       </span>
       <button

@@ -79,7 +79,7 @@ export function VerifyEmailStep({
 
   return (
     <div>
-      <div className="mb-6 flex items-start gap-3 rounded-lg bg-brand-50 p-4 text-sm text-brand-900">
+      <div className="mb-6 flex items-start gap-3 rounded-xl bg-brand-50 p-4 text-sm text-brand-900">
         <MailIcon className="mt-0.5 size-5 shrink-0 text-brand-700" />
         <p>
           We've sent a {SIGNUP_CODE.length}-digit code to <strong className="break-words">{started.email}</strong>. It expires in{' '}
@@ -89,7 +89,7 @@ export function VerifyEmailStep({
 
       <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div>
-          <label htmlFor="code" className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor="code" className="mb-1.5 block text-sm font-semibold text-slate-700">
             Verification code
           </label>
           <input
@@ -117,11 +117,11 @@ export function VerifyEmailStep({
         </div>
 
         {error && (
-          <p id="code-error" role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+          <p id="code-error" role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
             {error}
           </p>
         )}
-        {notice && <p className="rounded-lg bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">{notice}</p>}
+        {notice && <p className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">{notice}</p>}
 
         {mustRestart ? (
           <button type="button" className="btn-primary w-full py-3" onClick={onEditDetails}>

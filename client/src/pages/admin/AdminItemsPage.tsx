@@ -130,7 +130,7 @@ export function AdminItemsPage() {
         <ul className={`card divide-y divide-slate-100 ${loading ? 'opacity-60' : ''}`}>
           {data.items.map((item) => (
             <li key={item.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 p-3 sm:flex-nowrap">
-              <div className="size-12 shrink-0 overflow-hidden rounded-lg">
+              <div className="size-12 shrink-0 overflow-hidden rounded-xl">
                 <ItemImage name={item.name} category={item.category} imageUrl={item.imageUrl} size="sm" dimmed={!item.isActive} />
               </div>
               <div className="min-w-0 flex-1">

@@ -165,7 +165,7 @@ This starts the API on http://localhost:4000 and the web app on **http://localho
 
 **What the seed adds:**
 - these 5 accounts (Kabir's partner request is pending, so you can try approving it)
-- 27 items, a few of them low on stock
+- 27 items with product photos, a few of them low on stock
 - 7 demo orders in every status, with history (shown as `#SEED0001` to `#SEED0007`). Arjun has delivered two of them and is delivering a third, and two confirmed orders are waiting for a partner.
 
 **Running the seed again** resets item prices and stock, plus the demo accounts' passwords, roles and blocked flags. It never duplicates or changes the demo orders.
@@ -321,6 +321,7 @@ npm run typecheck                       # type-check client and server
 npm run build                           # production build of the client
 npm run vercel-build                    # full Vercel build into .vercel/output (see DEPLOYMENT.md)
 cd server && npx prisma studio          # browse the database in a GUI
+cd server && npm run photos             # add the seed photos to items that have none (safe on live data)
 cd server && npx prisma migrate dev     # create a migration after editing schema.prisma
 ```
 
@@ -331,7 +332,7 @@ cd server && npx prisma migrate dev     # create a migration after editing schem
 - **No way to reassign an order.** Once a partner accepts, only that partner (or an admin, via status changes or cancelling) can move it. If a partner is blocked mid-delivery, an admin has to finish or cancel their orders.
 - **Google sign-in is switched off** until `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are set; that's postponed to the end.
 - **Payments are Cash on Delivery only.** There is no payment gateway, and none is planned until a later phase.
-- **Item pictures are illustrated tiles** (an icon chosen from the item's name, on a colour for its category) unless an admin adds a photo URL. If a photo fails to load, the tile is shown instead. Icons use the device's emoji font, so they look slightly different on Windows, Android and iOS.
+- **Photos are loaded from Unsplash's image CDN** (free to use under the [Unsplash License](https://unsplash.com/license)). Seeded items get a photo from `server/prisma/itemPhotos.ts`; items without a photo, or whose photo fails to load, show an illustrated tile instead (an icon from the item's name on a colour for its category).
 - **Emails are sent from memory, without a queue or retries.** A failed email is logged and dropped; anything still pending is lost if the server crashes (a normal shutdown waits for it).
 - **Login error messages say whether an email is registered** ("No account found" vs "Incorrect password"), as the original spec asked. The forgot-password form does not reveal this.
 - **Any email address can sign up**, not just `@iitr.ac.in`. The emailed code proves the person owns the address, but nothing checks that they are actually an IIT Roorkee student. Admins can block accounts that shouldn't be there.
